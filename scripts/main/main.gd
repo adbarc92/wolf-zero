@@ -8,11 +8,13 @@ extends Node
 @onready var camera: Camera2D = $Game/Camera2D
 
 var _player_entity_id: int = -1
+var _echo_was_ready: bool = false
 
 
 func _ready() -> void:
 	_initialize_ecs()
 	_connect_signals()
+	_setup_vfx_manager()
 
 	# Start with a test level (remove this later)
 	call_deferred("_spawn_test_scene")
@@ -31,6 +33,14 @@ func _initialize_ecs() -> void:
 	ECS.register_system(AISystem.new())
 
 	print("ECS initialized with %d systems" % ECS.get_debug_info().system_count)
+
+
+func _setup_vfx_manager() -> void:
+	# Set camera for screen shake
+	VFXManager.set_camera(camera)
+
+	# Set effect container for spawning VFX
+	VFXManager.set_effect_container(entities_node)
 
 
 func _connect_signals() -> void:
@@ -120,6 +130,15 @@ func _spawn_player(position: Vector2) -> int:
 
 	GameEvents.player_spawned.emit(entity_id)
 	print("Player spawned with entity ID: ", entity_id)
+
+	# Emit initial HUD values
+	var health = ECS.get_component(entity_id, "health")
+	GameEvents.ui_update_health.emit(health.current, health.max)
+
+	var momentum = ECS.get_component(entity_id, "momentum")
+	GameEvents.ui_update_momentum.emit(momentum.current, momentum.max)
+
+	GameEvents.ui_update_echo_cooldown.emit(0.0, echo_data.cooldown_duration)
 
 	return entity_id
 
@@ -223,11 +242,28 @@ func _add_platform(position: Vector2, size: Vector2) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _player_entity_id < 0:
+		return
+
 	# Update camera to follow player
-	if _player_entity_id >= 0:
-		var player_pos = ECS.get_component(_player_entity_id, "position")
-		if player_pos:
-			camera.position = Vector2(player_pos.x, player_pos.y)
+	var player_pos = ECS.get_component(_player_entity_id, "position")
+	if player_pos:
+		camera.position = Vector2(player_pos.x, player_pos.y)
+
+	# Update echo cooldown HUD
+	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
+	if echo_data:
+		GameEvents.ui_update_echo_cooldown.emit(echo_data.cooldown, echo_data.cooldown_duration)
+
+		# Emit echo ready/not ready events
+		if echo_data.can_activate and echo_data.cooldown <= 0:
+			if not _echo_was_ready:
+				GameEvents.echo_ready.emit()
+				_echo_was_ready = true
+		else:
+			if _echo_was_ready:
+				GameEvents.echo_not_ready.emit()
+				_echo_was_ready = false
 
 
 # =============================================================================
@@ -235,11 +271,19 @@ func _process(_delta: float) -> void:
 # =============================================================================
 
 func _on_entity_damaged(entity_id: int, damage: int, current_hp: int) -> void:
+	var health = ECS.get_component(entity_id, "health")
+	var max_hp = health.max if health else 100
+
 	if entity_id == _player_entity_id:
 		GameEvents.player_damaged.emit(damage, current_hp)
-		GameEvents.ui_update_health.emit(current_hp, 100)
+		GameEvents.ui_update_health.emit(current_hp, max_hp)
 	else:
 		GameEvents.enemy_damaged.emit(entity_id, damage)
+
+	# Show damage number
+	var pos = ECS.get_component(entity_id, "position")
+	if pos:
+		GameEvents.ui_show_damage_number.emit(Vector2(pos.x, pos.y - 40), damage, false)
 
 	# Visual feedback
 	var node = ECS.get_entity_node(entity_id)

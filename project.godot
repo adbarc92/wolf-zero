@@ -23,6 +23,7 @@ ECS="*res://scripts/ecs/ecs.gd"
 GameEvents="*res://scripts/autoload/game_events.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 InputManager="*res://scripts/autoload/input_manager.gd"
+VFXManager="*res://scripts/autoload/vfx_manager.gd"
 
 [display]
 

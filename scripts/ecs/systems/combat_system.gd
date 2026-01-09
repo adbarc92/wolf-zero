@@ -73,6 +73,14 @@ func _start_light_attack(entity_id: int, weapon: Dictionary) -> void:
 	# Add momentum
 	_add_momentum(entity_id, "attack")
 
+	# Spawn attack VFX
+	var pos = get_component(entity_id, "position")
+	var input = get_component(entity_id, "input_state")
+	if pos and VFXManager:
+		var facing = input.facing if input else 1
+		var attack_pos = Vector2(pos.x + facing * 40, pos.y)
+		VFXManager.attack_effect(attack_pos, facing, "light_%d" % weapon.combo_current)
+
 
 func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) -> void:
 	weapon.is_attacking = true
@@ -96,6 +104,13 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 
 	# Add momentum
 	_add_momentum(entity_id, "attack")
+
+	# Spawn attack VFX
+	var pos = get_component(entity_id, "position")
+	if pos and VFXManager:
+		var facing = input.facing if input else 1
+		var attack_pos = Vector2(pos.x + facing * 40, pos.y)
+		VFXManager.attack_effect(attack_pos, facing, weapon.attack_type)
 
 
 func _process_hitboxes() -> void:
@@ -176,6 +191,12 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 
 	attack_hit.emit(attacker_id, target_id, damage)
 	entity_damaged.emit(target_id, damage, target_health.current)
+
+	# Hit VFX (hitstop, shake, sparks)
+	var target_pos = get_component(target_id, "position")
+	if target_pos and VFXManager:
+		var is_critical = weapon.combo_current >= 4  # Critical on high combo
+		VFXManager.hit_effect(Vector2(target_pos.x, target_pos.y), damage, is_critical)
 
 	# Check death
 	if target_health.current <= 0:

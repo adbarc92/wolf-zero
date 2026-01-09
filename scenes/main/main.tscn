@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://main_scene"]
+[gd_scene load_steps=3 format=3 uid="uid://main_scene"]
 
 [ext_resource type="Script" path="res://scripts/main/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://hud_scene" path="res://scenes/ui/hud.tscn" id="2_hud"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -20,10 +21,4 @@ position_smoothing_speed = 8.0
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10
 
-[node name="HUD" type="Control" parent="UI"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="HUD" parent="UI" instance=ExtResource("2_hud")]
