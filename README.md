@@ -86,11 +86,60 @@ Logic processors that run each frame:
 8. `HealthSystem` - Manage HP/invincibility
 9. `AISystem` - Enemy behavior
 
+## Requirements
+
+- [Godot Engine 4.2+](https://godotengine.org/download) (Standard or .NET version)
+- macOS, Windows, or Linux
+
 ## Getting Started
 
-1. Open project in Godot 4.2+
-2. Run `main.tscn` scene
-3. Use WASD to move, Space to jump, J to attack, K for heavy attack, Shift to dodge, Q for Echo
+### Installation
+
+1. **Download Godot 4.2+** from [godotengine.org](https://godotengine.org/download)
+   - Choose the "Standard" version (GDScript)
+   - Extract/install to your preferred location
+
+2. **Clone or download this repository**
+   ```bash
+   git clone <repository-url>
+   cd wolf-zero
+   ```
+
+3. **Open the project in Godot**
+   - Launch Godot Engine
+   - Click "Import" and navigate to the `wolf-zero` folder
+   - Select `project.godot` and click "Import & Edit"
+
+### Running the Game
+
+**From Godot Editor:**
+- Press `F5` to run the main scene
+- Or click the "Play" button in the top-right corner
+
+**From Command Line (if Godot is in PATH):**
+```bash
+# macOS
+/Applications/Godot.app/Contents/MacOS/Godot --path .
+
+# Windows
+godot.exe --path .
+
+# Linux
+godot --path .
+```
+
+### Test Scene
+
+The game starts with a test scene containing:
+- A cyan player character (left side)
+- A red enemy drone (right side)
+- Several platforms to jump on
+
+**Try these to test combat effects:**
+1. Move toward the enemy with A/D
+2. Press J repeatedly to perform light attack combos
+3. Watch for: cyan slash arcs, brief freeze (hitstop), screen shake, and sparks on hit
+4. Build up to 4+ combo hits for critical effects (longer freeze, yellow sparks)
 
 ## Controls (Keyboard)
 
@@ -111,3 +160,18 @@ Logic processors that run each frame:
 - **Right side swipe**: Heavy attack / Dodge
 - **Swipe up**: Jump
 - **Two-finger tap**: Activate Echo
+
+## Troubleshooting
+
+**"Scene not found" error:**
+- Ensure you opened the project via "Import" in Godot, not just the folder
+
+**No visuals / black screen:**
+- Check that `scenes/main/main.tscn` is set as the main scene in Project Settings
+
+**Controls not working:**
+- Verify input mappings in Project > Project Settings > Input Map
+- Keys: A/D (move), Space (jump), J (light attack), K (heavy attack)
+
+**Godot version errors:**
+- This project requires Godot 4.2+. Earlier versions (3.x or 4.0/4.1) may have compatibility issues
