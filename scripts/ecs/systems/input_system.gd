@@ -25,6 +25,9 @@ func _process_movement_input(input: Dictionary) -> void:
 	input.jump_just_pressed = Input.is_action_just_pressed("jump")
 	input.jump_pressed = Input.is_action_pressed("jump")
 
+	# Crouch
+	input.crouch_pressed = Input.is_action_pressed("crouch")
+
 
 func _process_combat_input(input: Dictionary) -> void:
 	# Light attack
@@ -55,7 +58,8 @@ func _get_attack_direction(input: Dictionary) -> Vector2:
 
 	if Input.is_action_pressed("jump"):  # Up
 		direction.y = -1
-	# Could add crouch/down input here
+	elif input.crouch_pressed:  # Down
+		direction.y = 1
 
 	# Default to forward if no direction
 	if direction == Vector2.ZERO:
