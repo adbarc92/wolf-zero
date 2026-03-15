@@ -1,47 +1,39 @@
-; Engine configuration file.
-; It's best edited using the editor UI and not directly,
-; since the parameters that go here are not all obvious.
-;
-; Format:
-;   [section] ; section goes between []
-;   param=value ; assign values to parameters
+# Controller Input Support Implementation Plan
 
-config_version=5
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-[animation]
+**Goal:** Add gamepad/controller bindings to all input actions and wire a new crouch input through the ECS, so the game is playable with a controller.
 
-compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+**Architecture:** All input methods (keyboard, touch, controller) converge at Godot's Input action system. We add joypad events to `project.godot`, add `crouch_pressed` to the `input_state` component, and update the InputSystem to read crouch and use it for downward attack direction.
 
-[application]
+**Tech Stack:** Godot 4.6, GDScript, custom ECS
 
-config/name="Wolf Zero"
-config/description="A cyberpunk hack-and-slash set in Neo Edo"
-config/version="0.1.0"
-run/main_scene="res://scenes/main/main.tscn"
-config/features=PackedStringArray("4.6", "Mobile")
-config/icon="res://assets/icon.svg"
+**Spec:** `docs/superpowers/specs/2026-03-12-controller-input-design.md`
 
-[autoload]
+---
 
-ECS="*res://scripts/ecs/ecs.gd"
-GameEvents="*res://scripts/autoload/game_events.gd"
-GameState="*res://scripts/autoload/game_state.gd"
-InputManager="*res://scripts/autoload/input_manager.gd"
-VFXManager="*res://scripts/autoload/vfx_manager.gd"
+## File Map
 
-[display]
+| File | Action | Purpose |
+|------|--------|---------|
+| `project.godot` | Modify (lines 45-86) | Add gamepad bindings to all input actions, add `crouch` action |
+| `scripts/ecs/components.gd` | Modify (line 145-156) | Add `crouch_pressed` to `input_state` component |
+| `scripts/ecs/systems/input_system.gd` | Modify (lines 20-27, 47-64) | Read crouch input, wire into attack direction |
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
-window/size/mode=2
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
-window/handheld/orientation=4
+---
 
-[dotnet]
+## Chunk 1: Controller Input
 
-project/assembly_name="Wolf Zero"
+### Task 1: Add gamepad bindings to project.godot
 
+**Files:**
+- Modify: `project.godot:45-86`
+
+- [ ] **Step 1: Add controller bindings to all existing input actions and create the crouch action**
+
+Replace the entire `[input]` section in `project.godot` with the following. Each action keeps its existing keyboard binding and adds gamepad button/axis events:
+
+```ini
 [input]
 
 move_left={
@@ -103,19 +95,136 @@ pause={
 , Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"button_index":6,"pressure":0.0,"pressed":true,"script":null)
 ]
 }
+```
 
-[layer_names]
+**Godot joypad button reference:**
+- 0 = A/Cross (South), 1 = B/Circle (East), 2 = X/Square (West), 3 = Y/Triangle (North)
+- 5 = RB/R1, 6 = Start
+- 11 = D-pad Up, 12 = D-pad Down, 13 = D-pad Left, 14 = D-pad Right
 
-2d_physics/layer_1="player"
-2d_physics/layer_2="enemy"
-2d_physics/layer_3="platform"
-2d_physics/layer_4="hazard"
-2d_physics/layer_5="interactable"
-2d_physics/layer_6="projectile"
-2d_physics/layer_7="hitbox"
-2d_physics/layer_8="hurtbox"
+**Godot joypad axis reference:**
+- Axis 0 = Left stick X (-1.0 = left, 1.0 = right)
+- Axis 1 = Left stick Y (-1.0 = up, 1.0 = down)
 
-[rendering]
+- [ ] **Step 2: Commit**
 
-renderer/rendering_method="mobile"
-textures/vram_compression/import_etc2_astc=true
+```bash
+git add project.godot
+git commit -m "feat: add gamepad bindings to all input actions and add crouch action"
+```
+
+---
+
+### Task 2: Add crouch_pressed to input_state component
+
+**Files:**
+- Modify: `scripts/ecs/components.gd:145-156`
+
+- [ ] **Step 1: Add crouch_pressed field to input_state**
+
+In `scripts/ecs/components.gd`, add `"crouch_pressed": false,` to the `input_state()` function's return dictionary, after the `"jump_just_pressed"` line:
+
+```gdscript
+static func input_state() -> Dictionary:
+	return {
+		"move_direction": 0.0,  # -1 to 1
+		"jump_pressed": false,
+		"jump_just_pressed": false,
+		"crouch_pressed": false,
+		"attack_light": false,
+		"attack_heavy": false,
+		"attack_direction": Vector2.ZERO,
+		"dodge_pressed": false,
+		"echo_pressed": false,
+		"facing": 1,  # 1 right, -1 left
+	}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add scripts/ecs/components.gd
+git commit -m "feat: add crouch_pressed to input_state component"
+```
+
+---
+
+### Task 3: Update InputSystem to read crouch and wire into attack direction
+
+**Files:**
+- Modify: `scripts/ecs/systems/input_system.gd:20-27` (movement input)
+- Modify: `scripts/ecs/systems/input_system.gd:47-64` (attack direction)
+
+- [ ] **Step 1: Add crouch reading to _process_movement_input**
+
+In `scripts/ecs/systems/input_system.gd`, add crouch reading at the end of `_process_movement_input()`:
+
+```gdscript
+func _process_movement_input(input: Dictionary) -> void:
+	# Horizontal movement
+	input.move_direction = Input.get_axis("move_left", "move_right")
+
+	# Jump
+	input.jump_just_pressed = Input.is_action_just_pressed("jump")
+	input.jump_pressed = Input.is_action_pressed("jump")
+
+	# Crouch
+	input.crouch_pressed = Input.is_action_pressed("crouch")
+```
+
+- [ ] **Step 2: Wire crouch into _get_attack_direction for down attacks**
+
+In `scripts/ecs/systems/input_system.gd`, replace the TODO comment in `_get_attack_direction()` with the crouch check:
+
+```gdscript
+func _get_attack_direction(input: Dictionary) -> Vector2:
+	var direction = Vector2.ZERO
+
+	# Check for directional input
+	if Input.is_action_pressed("move_left"):
+		direction.x = -1
+	elif Input.is_action_pressed("move_right"):
+		direction.x = 1
+
+	if Input.is_action_pressed("jump"):  # Up
+		direction.y = -1
+	elif input.crouch_pressed:  # Down
+		direction.y = 1
+
+	# Default to forward if no direction
+	if direction == Vector2.ZERO:
+		direction.x = input.facing
+
+	return direction.normalized()
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add scripts/ecs/systems/input_system.gd
+git commit -m "feat: read crouch input and wire into directional attacks"
+```
+
+---
+
+### Task 4: Manual verification
+
+- [ ] **Step 1: Launch the game in Godot editor**
+
+Open the project in Godot 4.6 and run the main scene (F5). Verify:
+1. Keyboard controls still work (A/D move, Space jump, J/K attack, Shift dodge, Q echo)
+2. S key triggers crouch input (no visible behavior yet, but no errors)
+
+- [ ] **Step 2: Test with a connected controller**
+
+With a gamepad connected:
+1. Left stick left/right and D-pad left/right move the player
+2. Left stick up, D-pad up, and A button (South) trigger jump
+3. Left stick down and D-pad down trigger crouch (no visible behavior yet)
+4. X button (West) triggers light attack
+5. Y button (North) triggers heavy attack
+6. B button (East) triggers dodge
+7. RB/R1 triggers echo activate
+8. Start button triggers pause
+
+- [ ] **Step 3: Final commit if any fixes needed**

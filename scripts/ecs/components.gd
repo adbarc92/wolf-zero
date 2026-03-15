@@ -147,6 +147,7 @@ static func input_state() -> Dictionary:
 		"move_direction": 0.0,  # -1 to 1
 		"jump_pressed": false,
 		"jump_just_pressed": false,
+		"crouch_pressed": false,
 		"attack_light": false,
 		"attack_heavy": false,
 		"attack_direction": Vector2.ZERO,
