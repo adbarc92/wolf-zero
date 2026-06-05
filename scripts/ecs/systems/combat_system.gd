@@ -40,7 +40,8 @@ func _process_attack_timers(delta: float) -> void:
 
 
 func _process_attack_inputs() -> void:
-	for entity_id in ecs.get_entities_with_all(["weapon", "input_state"]):
+	var input_entities: Array[String] = ["weapon", "input_state"]
+	for entity_id in ecs.get_entities_with_all(input_entities):
 		var weapon = get_component(entity_id, "weapon")
 		var input = get_component(entity_id, "input_state")
 
@@ -70,8 +71,12 @@ func _start_light_attack(entity_id: int, weapon: Dictionary) -> void:
 
 	attack_started.emit(entity_id, "light_%d" % weapon.combo_current)
 
-	# Add momentum
-	_add_momentum(entity_id, "attack")
+	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
+	var momentum_system = ecs.get_system(MomentumSystem)
+	if momentum_system:
+		var momentum = get_component(entity_id, "momentum")
+		if momentum:
+			momentum_system.add_momentum(entity_id, momentum.gain_attack)
 
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
@@ -102,8 +107,12 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 
 	attack_started.emit(entity_id, weapon.attack_type)
 
-	# Add momentum
-	_add_momentum(entity_id, "attack")
+	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
+	var momentum_system = ecs.get_system(MomentumSystem)
+	if momentum_system:
+		var momentum = get_component(entity_id, "momentum")
+		if momentum:
+			momentum_system.add_momentum(entity_id, momentum.gain_attack)
 
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
@@ -204,24 +213,6 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 
 	# Disable hitbox after hit to prevent multi-hit
 	weapon.hitbox_active = false
-
-
-func _add_momentum(entity_id: int, action_type: String) -> void:
-	var momentum = get_component(entity_id, "momentum")
-	if not momentum:
-		return
-
-	var gain = 0.0
-	match action_type:
-		"attack":
-			gain = momentum.gain_attack
-		"dodge":
-			gain = momentum.gain_dodge
-		"parry":
-			gain = momentum.gain_parry
-
-	momentum.current = min(momentum.current + gain, momentum.max)
-	momentum.decay_timer = momentum.decay_delay
 
 
 ## Apply damage to an entity from external source
