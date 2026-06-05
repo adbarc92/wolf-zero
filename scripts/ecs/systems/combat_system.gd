@@ -122,6 +122,17 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 		VFXManager.attack_effect(attack_pos, facing, weapon.attack_type)
 
 
+## Decide an attacker's facing: input_state.facing -> velocity sign -> stored enemy.facing.
+static func resolve_facing(input_state, velocity, enemy) -> int:
+	if input_state != null:
+		return input_state.facing
+	if velocity != null and abs(velocity.x) > 1.0:
+		return -1 if velocity.x < 0.0 else 1
+	if enemy != null:
+		return enemy.get("facing", 1)
+	return 1
+
+
 func _process_hitboxes() -> void:
 	# Get all entities with active hitboxes
 	for attacker_id in ecs.get_entities_with("weapon"):
@@ -130,11 +141,13 @@ func _process_hitboxes() -> void:
 			continue
 
 		var attacker_pos = get_component(attacker_id, "position")
-		var attacker_input = get_component(attacker_id, "input_state")
 		if not attacker_pos:
 			continue
 
-		var facing = attacker_input.facing if attacker_input else 1
+		var attacker_input = get_component(attacker_id, "input_state")
+		var attacker_vel = get_component(attacker_id, "velocity")
+		var attacker_enemy = get_component(attacker_id, "enemy")
+		var facing = resolve_facing(attacker_input, attacker_vel, attacker_enemy)
 		var is_player = has_component(attacker_id, "tag_player")
 
 		# Check against potential targets

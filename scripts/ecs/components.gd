@@ -230,6 +230,7 @@ static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 		"is_telegraphing": false,
 		"has_armor": false,
 		"armor_hits": 0,
+		"facing": 1,
 	}
 
 
