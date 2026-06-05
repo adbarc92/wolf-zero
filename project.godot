@@ -42,6 +42,10 @@ window/handheld/orientation=4
 
 project/assembly_name="Wolf Zero"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [input]
 
 move_left={
