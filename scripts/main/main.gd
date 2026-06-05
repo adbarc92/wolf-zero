@@ -205,6 +205,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	ECS.add_component(entity_id, "health", Components.health(base_health))
 
 	ECS.add_component(entity_id, "weapon", Components.weapon(10, 0.5))
+	ECS.add_component(entity_id, "platformer", Components.platformer())
 	ECS.add_component(entity_id, "ai", Components.ai("patrol"))
 	ECS.add_component(entity_id, "enemy", Components.enemy(enemy_type))
 	ECS.add_component(entity_id, "tag_enemy", Components.tag_enemy())
