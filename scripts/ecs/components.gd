@@ -154,6 +154,7 @@ static func input_state() -> Dictionary:
 		"attack_direction": Vector2.ZERO,
 		"dodge_pressed": false,
 		"dash_pressed": false,
+		"parry_pressed": false,
 		"echo_pressed": false,
 		"facing": 1,  # 1 right, -1 left
 	}
@@ -184,6 +185,17 @@ static func platformer(jump_force: float = -600.0) -> Dictionary:
 		"dash_duration": 0.2,
 		"dash_speed": 800.0,
 		"is_dashing": false,
+	}
+
+
+## Parry window state
+static func parry() -> Dictionary:
+	return {
+		"is_parrying": false,
+		"parry_timer": 0.0,
+		"parry_window": 0.2,
+		"cooldown": 0.0,
+		"cooldown_duration": 0.5,
 	}
 
 
