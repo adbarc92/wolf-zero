@@ -33,9 +33,9 @@ func _initialize_ecs() -> void:
 	ECS.register_system(DodgeSystem.new())
 	ECS.register_system(MovementSystem.new())
 	ECS.register_system(PhysicsSyncSystem.new())
+	ECS.register_system(EchoSystem.new())
 	ECS.register_system(CombatSystem.new())
 	ECS.register_system(MomentumSystem.new())
-	ECS.register_system(EchoSystem.new())
 	ECS.register_system(HealthSystem.new())
 
 	var anim := AnimationSystem.new()
