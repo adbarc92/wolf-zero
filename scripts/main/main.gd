@@ -31,6 +31,7 @@ func _ready() -> void:
 func _initialize_ecs() -> void:
 	ECS.register_system(InputSystem.new())
 	ECS.register_system(AISystem.new())
+	ECS.register_system(ParrySystem.new())
 	ECS.register_system(JumpSystem.new())
 	ECS.register_system(DodgeSystem.new())
 	ECS.register_system(MovementSystem.new())
@@ -94,6 +95,7 @@ func _connect_signals() -> void:
 	if combat_system:
 		combat_system.entity_damaged.connect(_on_entity_damaged)
 		combat_system.entity_died.connect(_on_entity_died)
+		combat_system.parried.connect(_on_parried)
 
 	# Connect momentum system signals
 	var momentum_system: MomentumSystem = ECS.get_system(MomentumSystem)
@@ -152,6 +154,7 @@ func _spawn_player(position: Vector2) -> int:
 	ECS.add_component(entity_id, "momentum", Components.momentum())
 	ECS.add_component(entity_id, "platformer", Components.platformer(-650))
 	ECS.add_component(entity_id, "dodge", Components.dodge())
+	ECS.add_component(entity_id, "parry", Components.parry())
 	ECS.add_component(entity_id, "input_state", Components.input_state())
 	ECS.add_component(entity_id, "echo_data", Components.echo_data())
 	ECS.add_component(entity_id, "tag_player", Components.tag_player())
@@ -417,3 +420,7 @@ func _on_echo_activated(_owner_id: int, _echo_entity_id: int) -> void:
 
 func _on_echo_ended(_echo_entity_id: int) -> void:
 	GameEvents.echo_ended.emit()
+
+
+func _on_parried(_defender_id: int, _attacker_id: int) -> void:
+	print("Parry!")
