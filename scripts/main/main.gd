@@ -338,6 +338,20 @@ func _on_entity_damaged(entity_id: int, damage: int, current_hp: int) -> void:
 			tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 
 
+static func _is_victory(living_enemy_count: int) -> bool:
+	return living_enemy_count <= 0
+
+
+func _show_victory() -> void:
+	if has_node("WinLayer"):
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "WinLayer"
+	layer.layer = 50
+	layer.add_child(WinLabel.new())
+	add_child(layer)
+
+
 static func _respawn_player_state(health: Dictionary, pos: Dictionary, spawn: Vector2) -> void:
 	health.current = health.max
 	health.invincible = false
@@ -373,6 +387,10 @@ func _on_entity_died(entity_id: int) -> void:
 		if node:
 			node.queue_free()
 		ECS.destroy_entity(entity_id)
+
+		var remaining := ECS.get_entities_with("tag_enemy").size()
+		if _is_victory(remaining):
+			_show_victory()
 
 
 func _on_momentum_changed(entity_id: int, current: float, max_val: float) -> void:
