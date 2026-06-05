@@ -11,6 +11,7 @@ const FK2 := "res://assets/FreeKnight_v1/Colour2/NoOutline/120x80_PNGSheets/"
 @onready var camera: Camera2D = $Game/Camera2D
 
 var _player_entity_id: int = -1
+var _player_spawn: Vector2
 var _echo_was_ready: bool = false
 
 
@@ -109,7 +110,8 @@ func _connect_signals() -> void:
 
 func _spawn_test_scene() -> void:
 	# Spawn player
-	_player_entity_id = _spawn_player(Vector2(200, 400))
+	_player_spawn = Vector2(200, 400)
+	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
 
 	# Spawn a test enemy
@@ -336,11 +338,27 @@ func _on_entity_damaged(entity_id: int, damage: int, current_hp: int) -> void:
 			tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 
 
+static func _respawn_player_state(health: Dictionary, pos: Dictionary, spawn: Vector2) -> void:
+	health.current = health.max
+	health.invincible = false
+	health.invincibility_timer = 0.0
+	pos.x = spawn.x
+	pos.y = spawn.y
+
+
 func _on_entity_died(entity_id: int) -> void:
 	if entity_id == _player_entity_id:
 		GameEvents.player_died.emit()
-		print("Player died!")
-		# Handle player death (respawn, game over, etc.)
+		var health = ECS.get_component(_player_entity_id, "health")
+		var pos = ECS.get_component(_player_entity_id, "position")
+		_respawn_player_state(health, pos, _player_spawn)
+		var node = ECS.get_entity_node(_player_entity_id)
+		if node:
+			node.position = _player_spawn
+			if node is CharacterBody2D:
+				node.velocity = Vector2.ZERO
+		GameEvents.ui_update_health.emit(health.current, health.max)
+		print("Player respawned")
 	else:
 		var enemy = ECS.get_component(entity_id, "enemy")
 		var enemy_type = enemy.type if enemy else "unknown"
