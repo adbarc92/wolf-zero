@@ -3,6 +3,8 @@ extends Node
 ##
 ## Initializes ECS systems and manages game flow.
 
+const FK := "res://assets/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/"
+
 @onready var game: Node2D = $Game
 @onready var entities_node: Node2D = $Game/Entities
 @onready var camera: Camera2D = $Game/Camera2D
@@ -21,18 +23,41 @@ func _ready() -> void:
 
 
 func _initialize_ecs() -> void:
-	# Register all systems in execution order
 	ECS.register_system(InputSystem.new())
+	ECS.register_system(AISystem.new())
 	ECS.register_system(JumpSystem.new())
 	ECS.register_system(DodgeSystem.new())
 	ECS.register_system(MovementSystem.new())
+	ECS.register_system(PhysicsSyncSystem.new())
 	ECS.register_system(CombatSystem.new())
 	ECS.register_system(MomentumSystem.new())
 	ECS.register_system(EchoSystem.new())
 	ECS.register_system(HealthSystem.new())
-	ECS.register_system(AISystem.new())
+
+	var anim := AnimationSystem.new()
+	anim.player_frames = _build_player_frames()
+	ECS.register_system(anim)
 
 	print("ECS initialized with %d systems" % ECS.get_debug_info().system_count)
+
+
+func _build_player_frames() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+	SpriteFramesBuilder.add_strip(sf, "idle", load(FK + "_Idle.png"), 120, 80, 10.0)
+	SpriteFramesBuilder.add_strip(sf, "run", load(FK + "_Run.png"), 120, 80, 14.0)
+	SpriteFramesBuilder.add_strip(sf, "jump", load(FK + "_Jump.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "fall", load(FK + "_Fall.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "dash", load(FK + "_Dash.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "roll", load(FK + "_Roll.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_1", load(FK + "_Attack.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_2", load(FK + "_Attack2.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_3", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_4", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_5", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "hit", load(FK + "_Hit.png"), 120, 80, 12.0, false)
+	return sf
 
 
 func _setup_vfx_manager() -> void:
@@ -80,6 +105,7 @@ func _spawn_player(position: Vector2) -> int:
 	var player_node = CharacterBody2D.new()
 	player_node.name = "Player"
 	player_node.position = position
+	player_node.add_to_group("player")
 	entities_node.add_child(player_node)
 
 	# Add collision shape
@@ -90,15 +116,7 @@ func _spawn_player(position: Vector2) -> int:
 	collision.position = Vector2(0, 0)
 	player_node.add_child(collision)
 
-	# Add sprite placeholder
-	var sprite = Sprite2D.new()
-	sprite.name = "Sprite"
-	# Create a simple colored rectangle as placeholder
-	var image = Image.create(32, 64, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0.0, 0.8, 1.0))  # Cyan
-	var texture = ImageTexture.create_from_image(image)
-	sprite.texture = texture
-	player_node.add_child(sprite)
+	# Visual is created by AnimationSystem (AnimatedSprite2D named "Anim").
 
 	# Create entity with ECS
 	var entity_id = ECS.create_entity_with_node(player_node)
@@ -122,6 +140,7 @@ func _spawn_player(position: Vector2) -> int:
 	platformer.has_dash = GameState.player_data.has_dash
 	platformer.has_grapple = GameState.player_data.has_grapple
 	platformer.has_air_dash = GameState.player_data.has_air_dash
+	platformer.has_dash = true  # Slice grants dash (P0)
 
 	# Apply echo upgrades
 	var echo_data = ECS.get_component(entity_id, "echo_data")

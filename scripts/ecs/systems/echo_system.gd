@@ -38,7 +38,8 @@ func process(delta: float) -> void:
 
 func _process_recording(delta: float) -> void:
 	## Record player actions continuously
-	for entity_id in ecs.get_entities_with_all(["echo_data", "tag_player"]):
+	var recording_required: Array[String] = ["echo_data", "tag_player"]
+	for entity_id in ecs.get_entities_with_all(recording_required):
 		var echo_data = get_component(entity_id, "echo_data")
 		if not echo_data.is_recording:
 			continue
@@ -80,7 +81,8 @@ func _process_cooldowns(delta: float) -> void:
 
 
 func _process_activation() -> void:
-	for entity_id in ecs.get_entities_with_all(["echo_data", "input_state", "tag_player"]):
+	var activation_required: Array[String] = ["echo_data", "input_state", "tag_player"]
+	for entity_id in ecs.get_entities_with_all(activation_required):
 		var echo_data = get_component(entity_id, "echo_data")
 		var input = get_component(entity_id, "input_state")
 
