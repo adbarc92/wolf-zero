@@ -147,9 +147,19 @@ func _process_telegraph(entity_id: int, ai: Dictionary, enemy: Dictionary, delta
 
 
 func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: float) -> void:
-	# Attack is handled by combat system via weapon component
-	# Just set state back to chase after attack
-	ai.attack_cooldown = 1.0  # Time between attacks
+	# Face the target and open the weapon hitbox for this attack.
+	var weapon = get_component(entity_id, "weapon")
+	var pos = get_component(entity_id, "position")
+	if weapon and pos and ai.target_entity >= 0 and ecs.entity_exists(ai.target_entity):
+		var target_pos = ecs.get_component(ai.target_entity, "position")
+		if target_pos and enemy:
+			enemy.facing = -1 if target_pos.x < pos.x else 1
+		weapon.is_attacking = true
+		weapon.hitbox_active = true
+		weapon.attack_type = "enemy"
+		weapon.attack_timer = weapon.attack_speed  # CombatSystem timers self-close the window
+
+	ai.attack_cooldown = 1.0  # time between attacks
 	ai.state = "chase"
 
 	if enemy:
