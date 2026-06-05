@@ -332,7 +332,7 @@ func _on_entity_damaged(entity_id: int, damage: int, current_hp: int) -> void:
 	var node = ECS.get_entity_node(entity_id)
 	if node:
 		var tween = create_tween()
-		var sprite = node.get_node_or_null("Sprite")
+		var sprite = node.get_node_or_null("Anim")
 		if sprite:
 			tween.tween_property(sprite, "modulate", Color.RED, 0.05)
 			tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
