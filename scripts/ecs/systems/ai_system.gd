@@ -100,6 +100,18 @@ func _process_patrol(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dicti
 
 
 func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Dictionary, player_id: int, _delta: float) -> void:
+	# Aggro: a nearby echo decoy steals the enemy's attention.
+	if ai.can_be_distracted:
+		var echoes = ecs.get_entities_with("tag_echo")
+		for echo_id in echoes:
+			var echo_pos = ecs.get_component(echo_id, "position")
+			if echo_pos == null:
+				continue
+			var d_echo = Vector2(echo_pos.x - pos.x, echo_pos.y - pos.y).length()
+			if d_echo <= ai.detection_range and ai.target_entity != echo_id:
+				ai.target_entity = echo_id
+				break
+
 	# Check if target still valid
 	if ai.target_entity < 0 or not ecs.entity_exists(ai.target_entity):
 		ai.state = "idle"
