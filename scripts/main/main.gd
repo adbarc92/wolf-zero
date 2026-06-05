@@ -241,6 +241,14 @@ func _add_platform(position: Vector2, size: Vector2) -> void:
 	platform.add_child(visual)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause"):
+		if GameState.current_state == GameState.State.PLAYING:
+			GameState.pause_game()
+		elif GameState.current_state == GameState.State.PAUSED:
+			GameState.resume_game()
+
+
 func _process(_delta: float) -> void:
 	if _player_entity_id < 0:
 		return
