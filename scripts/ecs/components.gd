@@ -229,6 +229,7 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 		"patrol_index": 0,
 		"wait_timer": 0.0,
 		"attack_cooldown": 0.0,
+		"stagger_timer": 0.0,
 		"can_be_distracted": true,  # By Echo
 	}
 

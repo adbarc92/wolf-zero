@@ -40,6 +40,8 @@ func process(delta: float) -> void:
 				_process_attack(entity_id, ai, enemy, delta)
 			"telegraph":
 				_process_telegraph(entity_id, ai, enemy, delta)
+			"stagger":
+				_process_stagger(entity_id, ai, delta)
 
 
 func _process_idle(entity_id: int, ai: Dictionary, pos: Dictionary, player_pos: Dictionary, player_id: int) -> void:
@@ -177,6 +179,22 @@ func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: 
 	if enemy:
 		enemy.is_telegraphing = false
 		enemy.telegraph_timer = 0
+
+
+func _process_stagger(entity_id: int, ai: Dictionary, delta: float) -> void:
+	var vel = get_component(entity_id, "velocity")
+	if vel:
+		vel.x = 0.0
+	var enemy = get_component(entity_id, "enemy")
+	if enemy:
+		enemy.is_telegraphing = false
+		enemy.telegraph_timer = 0.0
+	var weapon = get_component(entity_id, "weapon")
+	if weapon:
+		weapon.hitbox_active = false
+	ai.stagger_timer -= delta
+	if ai.stagger_timer <= 0.0:
+		ai.state = "chase"
 
 
 func _can_detect_player(ai: Dictionary, pos: Dictionary, player_pos: Dictionary) -> bool:

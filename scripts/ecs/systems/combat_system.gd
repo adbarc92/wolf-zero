@@ -8,6 +8,7 @@ signal attack_hit(attacker_id: int, target_id: int, damage: int)
 signal combo_increased(entity_id: int, combo_count: int)
 signal entity_damaged(entity_id: int, damage: int, current_hp: int)
 signal entity_died(entity_id: int)
+signal parried(defender_id: int, attacker_id: int)
 
 
 func _get_required_components() -> Array[String]:
@@ -191,6 +192,31 @@ func _check_hit(attacker_id: int, target_id: int, facing: int) -> bool:
 
 
 func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void:
+	# Parry: a parrying target negates the hit, reflects damage, and staggers the attacker.
+	var target_parry = get_component(target_id, "parry")
+	if target_parry and target_parry.is_parrying:
+		target_parry.is_parrying = false
+		var atk_health = get_component(attacker_id, "health")
+		if atk_health:
+			var reflect: int = max(weapon.damage, 10)
+			atk_health.current -= reflect
+			entity_damaged.emit(attacker_id, reflect, atk_health.current)
+			if atk_health.current <= 0:
+				entity_died.emit(attacker_id)
+		var atk_ai = get_component(attacker_id, "ai")
+		if atk_ai:
+			atk_ai.state = "stagger"
+			atk_ai.stagger_timer = 1.0
+		var mom = get_component(target_id, "momentum")
+		var mom_sys = ecs.get_system(MomentumSystem)
+		if mom and mom_sys:
+			mom_sys.add_momentum(target_id, mom.gain_parry)
+		parried.emit(target_id, attacker_id)
+		if VFXManager:
+			VFXManager.screen_shake(0.5, 0.15)
+		weapon.hitbox_active = false  # consume the attack
+		return
+
 	var target_health = get_component(target_id, "health")
 	var target_enemy = get_component(target_id, "enemy")
 
