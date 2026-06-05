@@ -211,6 +211,18 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 	target_health.invincible = true
 	target_health.invincibility_timer = target_health.invincibility_duration
 
+	# Knockback away from the attacker
+	var target_vel = get_component(target_id, "velocity")
+	var attacker_pos_k = get_component(attacker_id, "position")
+	var target_pos_k = get_component(target_id, "position")
+	if target_vel and attacker_pos_k and target_pos_k:
+		var dir := 1.0 if target_pos_k.x >= attacker_pos_k.x else -1.0
+		var knock := 250.0
+		if weapon.attack_type.begins_with("heavy"):
+			knock = 450.0
+		target_vel.x = dir * knock
+		target_vel.y = -120.0  # small pop
+
 	attack_hit.emit(attacker_id, target_id, damage)
 	entity_damaged.emit(target_id, damage, target_health.current)
 
