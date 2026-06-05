@@ -3,8 +3,15 @@ extends ECSSystem
 ## Renderer: owns each entity's AnimatedSprite2D and drives it from the
 ## `sprite` component. Derives the clip name from gameplay state each frame.
 
-## Shared SpriteFrames for the player (built once, injected by main.gd).
-var player_frames: SpriteFrames = null
+## Named SpriteFrames sets, injected by main.gd (e.g. {"player":..., "enemy":...}).
+var frame_sets: Dictionary = {}
+
+
+## Resolve a frame-set name to a SpriteFrames, falling back to "player".
+func frames_for(set_name: String) -> SpriteFrames:
+	if frame_sets.has(set_name):
+		return frame_sets[set_name]
+	return frame_sets.get("player", null)
 
 
 func _get_required_components() -> Array[String]:
@@ -38,8 +45,7 @@ func process(_delta: float) -> void:
 		if not (node is Node2D):
 			continue
 		var sprite_comp = get_component(entity_id, "sprite")
-
-		var anim_node := _ensure_anim_node(node)
+		var anim_node := _ensure_anim_node(node, sprite_comp.get("frame_set", "player"))
 		if anim_node == null:
 			continue
 
@@ -64,16 +70,16 @@ func process(_delta: float) -> void:
 		anim_node.modulate = sprite_comp.modulate
 
 
-## Create (once) the AnimatedSprite2D child for an entity node.
-func _ensure_anim_node(node: Node) -> AnimatedSprite2D:
+func _ensure_anim_node(node: Node, set_name: String) -> AnimatedSprite2D:
 	var existing := node.get_node_or_null("Anim")
 	if existing is AnimatedSprite2D:
 		return existing
-	if player_frames == null:
+	var frames := frames_for(set_name)
+	if frames == null:
 		return null
 	var anim := AnimatedSprite2D.new()
 	anim.name = "Anim"
-	anim.sprite_frames = player_frames
+	anim.sprite_frames = frames
 	anim.play("idle")
 	node.add_child(anim)
 	return anim

@@ -4,6 +4,7 @@ extends Node
 ## Initializes ECS systems and manages game flow.
 
 const FK := "res://assets/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/"
+const FK2 := "res://assets/FreeKnight_v1/Colour2/NoOutline/120x80_PNGSheets/"
 
 @onready var game: Node2D = $Game
 @onready var entities_node: Node2D = $Game/Entities
@@ -39,7 +40,10 @@ func _initialize_ecs() -> void:
 	ECS.register_system(HealthSystem.new())
 
 	var anim := AnimationSystem.new()
-	anim.player_frames = _build_player_frames()
+	anim.frame_sets = {
+		"player": _build_player_frames(),
+		"enemy": _build_enemy_frames(),
+	}
 	ECS.register_system(anim)
 
 	print("ECS initialized with %d systems" % ECS.get_debug_info().system_count)
@@ -61,6 +65,17 @@ func _build_player_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "light_4", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
 	SpriteFramesBuilder.add_strip(sf, "light_5", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
 	SpriteFramesBuilder.add_strip(sf, "hit", load(FK + "_Hit.png"), 120, 80, 12.0, false)
+	return sf
+
+
+func _build_enemy_frames() -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+	SpriteFramesBuilder.add_strip(sf, "idle", load(FK2 + "_Idle.png"), 120, 80, 10.0)
+	SpriteFramesBuilder.add_strip(sf, "run", load(FK2 + "_Run.png"), 120, 80, 12.0)
+	SpriteFramesBuilder.add_strip(sf, "light_1", load(FK2 + "_Attack.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "hit", load(FK2 + "_Hit.png"), 120, 80, 12.0, false)
 	return sf
 
 
@@ -180,14 +195,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	collision.shape = shape
 	enemy_node.add_child(collision)
 
-	# Add sprite placeholder (red)
-	var sprite = Sprite2D.new()
-	sprite.name = "Sprite"
-	var image = Image.create(32, 64, false, Image.FORMAT_RGBA8)
-	image.fill(Color(1.0, 0.3, 0.2))  # Red-orange
-	var texture = ImageTexture.create_from_image(image)
-	sprite.texture = texture
-	enemy_node.add_child(sprite)
+	# Visual is created by AnimationSystem (AnimatedSprite2D named "Anim").
 
 	# Create entity
 	var entity_id = ECS.create_entity_with_node(enemy_node)
@@ -197,6 +205,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	ECS.add_component(entity_id, "velocity", Components.velocity())
 	ECS.add_component(entity_id, "collision", Components.collision(32, 64))
 	ECS.add_component(entity_id, "sprite", Components.sprite())
+	ECS.get_component(entity_id, "sprite").frame_set = "enemy"
 
 	# Adjust health for solo mode
 	var base_health = 50

@@ -39,6 +39,7 @@ static func sprite(texture_path: String = "", flip_h: bool = false) -> Dictionar
 		"frame": 0,
 		"visible": true,
 		"modulate": Color.WHITE,
+		"frame_set": "player",
 		"z_index": 0,
 	}
 
