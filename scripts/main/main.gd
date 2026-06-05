@@ -18,6 +18,10 @@ func _ready() -> void:
 	_connect_signals()
 	_setup_vfx_manager()
 
+	# Dev-only on-screen input-action guide (F1 to toggle)
+	if OS.is_debug_build():
+		add_child(DebugOverlay.new())
+
 	# Start with a test level (remove this later)
 	call_deferred("_spawn_test_scene")
 
