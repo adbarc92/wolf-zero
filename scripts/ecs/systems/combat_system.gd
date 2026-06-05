@@ -148,10 +148,10 @@ func _process_hitboxes() -> void:
 		var attacker_vel = get_component(attacker_id, "velocity")
 		var attacker_enemy = get_component(attacker_id, "enemy")
 		var facing = resolve_facing(attacker_input, attacker_vel, attacker_enemy)
-		var is_player = has_component(attacker_id, "tag_player")
+		var is_player_team = has_component(attacker_id, "tag_player") or has_component(attacker_id, "tag_echo")
 
 		# Check against potential targets
-		var target_tag = "tag_enemy" if is_player else "tag_player"
+		var target_tag = "tag_enemy" if is_player_team else "tag_player"
 		for target_id in ecs.get_entities_with(target_tag):
 			if _check_hit(attacker_id, target_id, facing):
 				_apply_damage(attacker_id, target_id, weapon)
