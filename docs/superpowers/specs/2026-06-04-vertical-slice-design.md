@@ -204,7 +204,7 @@ until bodies run real Godot physics under one deterministic authority, nothing e
   currently have no `platformer`/`input_state`, so MovementSystem applies them neither gravity nor
   friction and they'd float. Fix: give enemies a minimal gravity-bearing component (add
   `platformer`, or have MovementSystem apply gravity to any entity with `collision`+`velocity`).
-  This is an M1 contract item.
+  This is a P1 contract item.
 - **Node ownership contract (G2/F4):** the **spawn factory** creates *only* the physics node
   (`CharacterBody2D` + `CollisionShape2D`). **`AnimationSystem`** creates and owns the visual
   child (`AnimatedSprite2D`) on first sight of a `sprite` component, applies
@@ -272,7 +272,7 @@ order locked in the plan.
 - **`stagger` is an explicit AI state.** Add `stagger` to the `AISystem` state machine: on parry
   (or heavy armor-break), set `ai.state = "stagger"` + a `stagger_timer`; `process` skips all other
   branches and zeroes `vel.x` until the timer expires, then returns to `chase`. Interrupts any
-  in-progress telegraph/attack. ParrySystem (M2) targets this state.
+  in-progress telegraph/attack. ParrySystem (P2) targets this state.
 
 ### 9.5 Verification & run path (round-3 F7)
 
@@ -283,9 +283,10 @@ order locked in the plan.
   target machine (the dev desktop for now; min-spec deferred with mobile). Frame-time budget
   ≤16.6 ms. A drop below 55 FPS in normal play is a defect.
 - **"Feels good"** is verified by a per-milestone **playtest checklist** (not vibes): each
-  milestone's DoD bullets become a literal checklist a tester runs and signs off; M0/M1 also get a
-  2–3 person quick playtest. Combat feel notes (hitstop length, knockback distance, i-frame window)
-  are recorded as tunable numbers in the plan, adjusted between playtests.
+  DoD bullets become a literal checklist a tester runs and signs off; the assembled complete slice
+  gets a 2–3 person playtest for the holistic fun judgment. Combat feel notes (hitstop length,
+  knockback distance, i-frame window) are recorded as tunable numbers in the plan, adjusted between
+  playtests.
 - **FreeKnight fps/scale:** the echo recording trims at a hardcoded 60 (echo_system.gd:68
   `max_record_time * 60`) — change it to use the physics tick
   (`Engine.physics_ticks_per_second`) so playback duration is tick-independent. The plan must state
@@ -293,38 +294,41 @@ order locked in the plan.
   box with the actual sprite pixel size (scale the `AnimatedSprite2D`, keep the collision box as
   the gameplay hurtbox of record).
 
-## 10. Build milestones — G0 is a hard gate (round-2 F7)
+## 10. Build phases — one deliverable, dependency-ordered
 
-The §4 IN list (the user's chosen scope: melee **+ traversal**, 3 enemies + elite, parry, Echo)
-remains the slice **target**. But it is most of documented Phase 1 stacked on an unverified
-foundation, so it is delivered in gated milestones, each independently playtested:
+**Decision (user, spec review):** the slice ships as **one complete deliverable** with the full §4
+IN list (melee **+ traversal**, 3 enemies + elite, parry, Echo) and is evaluated **as a whole** —
+the whole point is to feel all the core mechanics interacting (Echo + parry + traversal in real
+encounters) before judging fun. There is **no scope re-decision gate**; we build the entire slice.
 
-- **M0 — Playable foundation (HARD GATE).** `PhysicsSyncSystem` + dodge/dash-as-velocity +
-  `AnimationSystem`/player sprite + momentum/HUD fix + pause. **Dash is granted in the slice's
-  starting loadout** (set `has_dash=true` for the slice so it's objectively testable). Done = the
-  player runs, jumps, dashes on a real tilemap floor at 60 FPS with animation, and pause freezes
-  gameplay. *Nothing below is scheduled until M0 is playtested and signed off.*
-- **M1 — Two-way combat.** Split combat passes (CombatInput + HitboxResolution); enemy gravity
-  (round-3 F2); generalized attack path off `input_state`; **one** enemy (Ronin Drone) that
-  telegraphs and deals damage; hitstop/shake/knockback; **a simple fixed-spawn respawn** (die →
-  reset HP/position to a fixed spawn point, re-create the one enemy) — **not** the full
-  arena/checkpoint system (that's M4); a win trigger. Done = a fair, fun 1-v-1 that proves the core
-  exchange. *(Minimal loop-proving cut.)* The full checkpoint payload + per-arena enemy restore
-  lands in M4 with the real level.
-- **M2 — Echo + parry.** Echo combat-useful (team/targeting/aggro fix); `ParrySystem` + stagger.
-- **M3 — Roster + traversal.** Wall-jump/wall-run; Ashigaru + `ProjectileSystem`; Oni Mech +
-  elite; second arena.
-- **M4 — Level + polish.** Full handcrafted level (tilemap, parallax, camera, checkpoints),
-  pacing/tuning pass.
+The phases below are a **dependency-ordered build sequence**, not evaluation gates. The physics
+foundation (P0) genuinely must come first because it is currently broken (G0); each phase is
+smoke-tested (does it run, no regressions) before the next builds on it, but the *deliverable and
+the fun-evaluation playtest* are the complete slice at the end.
 
-If time/appetite runs short, **M0–M1 alone is a legitimate "does the loop feel good?" answer** and
-the later milestones can be reconsidered. This sequencing is the author's recommendation; the user
-may reorder at spec review.
+- **P0 — Physics & render foundation.** `PhysicsSyncSystem` + dodge/dash-as-velocity +
+  `AnimationSystem`/player sprite + momentum/HUD single-path fix + pause-actually-pauses. Dash
+  granted in the starting loadout. Smoke test: player runs/jumps/dashes on a tilemap floor at
+  60 FPS, animated, pause freezes.
+- **P1 — Two-way combat core.** Split combat passes (CombatInput + HitboxResolution); enemy gravity
+  (F2); generalized attack path off `input_state`; Ronin Drone telegraphs + deals damage;
+  hitstop/shake/knockback; respawn.
+- **P2 — Echo + parry.** Echo combat-useful (team/targeting/aggro fix); `ParrySystem` + enemy
+  stagger state.
+- **P3 — Roster + traversal.** Wall-jump/wall-run (`WallSystem`); Cyber-Ashigaru +
+  `ProjectileSystem`; Oni Mech + Elite Oni Mech.
+- **P4 — Level + flow + polish.** Full handcrafted level (tilemap, parallax, camera follow+limits);
+  checkpoint payload (player position + per-arena enemy roster) + respawn + win trigger; pacing and
+  game-feel tuning pass.
+
+**Evaluation:** the §11 Definition of Done is checked once, against the assembled slice, with a
+2–3-person playtest. Internal smoke tests run continuously; the holistic "is it fun?" judgment is
+made on the whole.
 
 ## 11. Definition of done
 
-DoD is **per milestone** (§10). The full-slice DoD (all of M0–M4): launch the level and play it
-start-to-finish with keyboard **or** gamepad, at 60 FPS:
+One DoD, checked against the **assembled complete slice** (§10 phases all done). Launch the level
+and play it start-to-finish with keyboard **or** gamepad, at 60 FPS:
 1. Traversal (wall-jump, wall-run, dash) feels responsive and clears the gaps.
 2. All three enemy types **fight back** and read clearly via telegraphs.
 3. Light / heavy / dodge / **parry** / Echo all function and feel weighty (hitstop + shake +
@@ -336,8 +340,8 @@ start-to-finish with keyboard **or** gamepad, at 60 FPS:
 6. Reaching the end shows a clear win state; **pause genuinely freezes gameplay** (ECS process-mode
    fix) and restart works.
 
-The **M0 gate** DoD specifically: player runs/jumps/dashes on a real tilemap floor at 60 FPS with
-animation and a working HUD/pause — proven by playtest before any later milestone is scheduled.
+Per-phase **smoke tests** (does it run, no regressions) gate each build phase internally, but the
+DoD above is the single acceptance check for the slice as a whole.
 
 ## 12. Risks
 
