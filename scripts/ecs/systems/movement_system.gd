@@ -43,13 +43,6 @@ func process(delta: float) -> void:
 		if input and input.move_direction == 0:
 			_apply_friction(vel, delta)
 
-		# Update position
-		pos.x += vel.x * delta
-		pos.y += vel.y * delta
-
-		# Sync with Godot node if present
-		_sync_node_position(entity_id, pos)
-
 
 func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float) -> void:
 	var target_speed = input.move_direction * vel.max_speed
@@ -83,25 +76,18 @@ func _apply_friction(vel: Dictionary, delta: float) -> void:
 	vel.x = move_toward(vel.x, 0, vel.friction * delta)
 
 
-func _apply_dodge_movement(entity_id: int, pos: Dictionary, vel: Dictionary, dodge: Dictionary, delta: float) -> void:
+func _apply_dodge_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, dodge: Dictionary, _delta: float) -> void:
 	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
-
-	pos.x += direction * dodge.dodge_speed * delta
 	vel.x = direction * dodge.dodge_speed
 	vel.y = 0  # No vertical movement during dodge
 
-	_sync_node_position(entity_id, pos)
 
-
-func _apply_dash_movement(entity_id: int, pos: Dictionary, vel: Dictionary, platformer: Dictionary, input: Dictionary, delta: float) -> void:
+func _apply_dash_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, platformer: Dictionary, _input: Dictionary, _delta: float) -> void:
+	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
-
-	pos.x += direction * platformer.dash_speed * delta
 	vel.x = direction * platformer.dash_speed
 	vel.y = 0  # No vertical movement during dash
-
-	_sync_node_position(entity_id, pos)
 
 
 func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, delta: float) -> void:
@@ -127,7 +113,3 @@ func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, de
 		platformer.wall_run_timer = platformer.wall_run_duration
 
 
-func _sync_node_position(entity_id: int, pos: Dictionary) -> void:
-	var node = get_node(entity_id)
-	if node and node is Node2D:
-		node.position = Vector2(pos.x, pos.y)
