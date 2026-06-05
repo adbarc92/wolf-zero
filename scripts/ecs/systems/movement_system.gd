@@ -25,6 +25,13 @@ func process(delta: float) -> void:
 			_apply_dodge_movement(entity_id, pos, vel, dodge_data, delta)
 			continue
 
+		# Dash trigger
+		if platformer and input and input.dash_pressed and platformer.has_dash \
+				and not platformer.is_dashing and platformer.dash_cooldown <= 0:
+			platformer.is_dashing = true
+			platformer.dash_duration = 0.2
+			platformer.dash_cooldown = 0.6
+
 		# Skip if dashing
 		if platformer and platformer.is_dashing:
 			_apply_dash_movement(entity_id, pos, vel, platformer, input, delta)

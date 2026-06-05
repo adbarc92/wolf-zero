@@ -152,6 +152,7 @@ static func input_state() -> Dictionary:
 		"attack_heavy": false,
 		"attack_direction": Vector2.ZERO,
 		"dodge_pressed": false,
+		"dash_pressed": false,
 		"echo_pressed": false,
 		"facing": 1,  # 1 right, -1 left
 	}
