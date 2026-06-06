@@ -236,6 +236,7 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 	target_health.current -= damage
 	target_health.invincible = true
 	target_health.invincibility_timer = target_health.invincibility_duration
+	target_health.hurt_timer = 0.25
 
 	# Knockback away from the attacker
 	var target_vel = get_component(target_id, "velocity")
@@ -275,6 +276,7 @@ func apply_damage_to(target_id: int, damage: int, _source_id: int = -1) -> void:
 	health.current -= damage
 	health.invincible = true
 	health.invincibility_timer = health.invincibility_duration
+	health.hurt_timer = 0.25
 
 	entity_damaged.emit(target_id, damage, health.current)
 

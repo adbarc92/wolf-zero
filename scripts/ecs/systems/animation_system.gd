@@ -21,17 +21,22 @@ func _get_required_components() -> Array[String]:
 ## Pure derivation: highest-priority state wins.
 ## Order: dodge -> dash -> attack -> airborne -> crouch -> run -> idle.
 static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictionary,
-		dodge: Dictionary, platformer: Dictionary, crouching: bool = false) -> String:
+		dodge: Dictionary, platformer: Dictionary, crouching: bool = false,
+		hurt: bool = false, on_wall: bool = false, climbing: bool = false) -> String:
 	if dodge and dodge.get("is_dodging", false):
 		return "roll"
 	if platformer and platformer.get("is_dashing", false):
 		return "dash"
+	if hurt:
+		return "hit"
 	if weapon and weapon.get("is_attacking", false):
 		var atype: String = weapon.get("attack_type", "none")
 		if atype == "light":
 			return "light_%d" % max(1, weapon.get("combo_current", 1))
 		if atype.begins_with("heavy"):
 			return atype
+	if on_wall:
+		return "wall_climb" if climbing else "wall_slide"
 	if collision and not collision.get("on_ground", true):
 		return "fall" if vel.get("y", 0.0) > 0.0 else "jump"
 	if crouching:
@@ -60,10 +65,15 @@ func process(_delta: float) -> void:
 
 		var crouching: bool = input != null and input.get("crouch_pressed", false) \
 			and collision != null and collision.get("on_ground", false)
+		var health = get_component(entity_id, "health")
+		var hurt: bool = health != null and health.get("hurt_timer", 0.0) > 0.0
+		var on_wall: bool = collision != null and collision.get("on_wall", false) and not collision.get("on_ground", true)
+		var climbing: bool = on_wall and input != null and input.get("jump_pressed", false) \
+			and platformer != null and platformer.get("wall_run_timer", 0.0) > 0.0
 		var clip := derive_clip(
 			vel if vel else {}, collision if collision else {},
 			weapon if weapon else {}, dodge if dodge else {},
-			platformer if platformer else {}, crouching)
+			platformer if platformer else {}, crouching, hurt, on_wall, climbing)
 		sprite_comp.animation = clip
 
 		if anim_node.sprite_frames and anim_node.sprite_frames.has_animation(clip):

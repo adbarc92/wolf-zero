@@ -91,6 +91,8 @@ func _build_player_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "hit", load(FK + "_Hit.png"), 120, 80, 12.0, false)
 	SpriteFramesBuilder.add_strip(sf, "crouch", load(FK + "_Crouch.png"), 120, 80, 8.0)
 	SpriteFramesBuilder.add_strip(sf, "crouch_walk", load(FK + "_CrouchWalk.png"), 120, 80, 12.0)
+	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK + "_WallSlide.png"), 120, 80, 10.0)
+	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK + "_WallClimb.png"), 120, 80, 12.0)
 	return sf
 
 
@@ -102,6 +104,8 @@ func _build_enemy_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "run", load(FK2 + "_Run.png"), 120, 80, 12.0)
 	SpriteFramesBuilder.add_strip(sf, "light_1", load(FK2 + "_Attack.png"), 120, 80, 14.0, false)
 	SpriteFramesBuilder.add_strip(sf, "hit", load(FK2 + "_Hit.png"), 120, 80, 12.0, false)
+	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK2 + "_WallSlide.png"), 120, 80, 10.0)
+	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK2 + "_WallClimb.png"), 120, 80, 12.0)
 	return sf
 
 

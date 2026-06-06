@@ -72,6 +72,7 @@ static func health(max_hp: int = 100) -> Dictionary:
 		"invincible": false,
 		"invincibility_timer": 0.0,
 		"invincibility_duration": 0.5,
+		"hurt_timer": 0.0,
 	}
 
 
