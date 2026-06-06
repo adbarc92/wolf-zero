@@ -22,7 +22,10 @@ func _get_required_components() -> Array[String]:
 ## Order: dodge -> dash -> attack -> airborne -> crouch -> run -> idle.
 static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictionary,
 		dodge: Dictionary, platformer: Dictionary, crouching: bool = false,
-		hurt: bool = false, on_wall: bool = false, climbing: bool = false) -> String:
+		hurt: bool = false, on_wall: bool = false, climbing: bool = false,
+		dead: bool = false) -> String:
+	if dead:
+		return "death"
 	if dodge and dodge.get("is_dodging", false):
 		return "roll"
 	if platformer and platformer.get("is_dashing", false):
@@ -70,10 +73,11 @@ func process(_delta: float) -> void:
 		var on_wall: bool = collision != null and collision.get("on_wall", false) and not collision.get("on_ground", true)
 		var climbing: bool = on_wall and input != null and input.get("jump_pressed", false) \
 			and platformer != null and platformer.get("wall_run_timer", 0.0) > 0.0
+		var dead: bool = has_component(entity_id, "dying")
 		var clip := derive_clip(
 			vel if vel else {}, collision if collision else {},
 			weapon if weapon else {}, dodge if dodge else {},
-			platformer if platformer else {}, crouching, hurt, on_wall, climbing)
+			platformer if platformer else {}, crouching, hurt, on_wall, climbing, dead)
 		sprite_comp.animation = clip
 
 		if anim_node.sprite_frames and anim_node.sprite_frames.has_animation(clip):

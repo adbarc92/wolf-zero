@@ -93,6 +93,7 @@ func _build_player_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "crouch_walk", load(FK + "_CrouchWalk.png"), 120, 80, 12.0)
 	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK + "_WallSlide.png"), 120, 80, 10.0)
 	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK + "_WallClimb.png"), 120, 80, 12.0)
+	SpriteFramesBuilder.add_strip(sf, "death", load(FK + "_Death.png"), 120, 80, 10.0, false)
 	return sf
 
 
@@ -106,6 +107,7 @@ func _build_enemy_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "hit", load(FK2 + "_Hit.png"), 120, 80, 12.0, false)
 	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK2 + "_WallSlide.png"), 120, 80, 10.0)
 	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK2 + "_WallClimb.png"), 120, 80, 12.0)
+	SpriteFramesBuilder.add_strip(sf, "death", load(FK2 + "_Death.png"), 120, 80, 10.0, false)
 	return sf
 
 
@@ -390,7 +392,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			GameState.resume_game()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_process_dying(delta)
+
 	if _player_entity_id < 0:
 		return
 
@@ -488,34 +492,65 @@ static func _respawn_player_state(health: Dictionary, pos: Dictionary, spawn: Ve
 
 
 func _on_entity_died(entity_id: int) -> void:
+	if ECS.has_component(entity_id, "dying"):
+		return  # already dying
+	# Freeze the entity and play its death animation; despawn/respawn is deferred.
+	ECS.add_component(entity_id, "dying", Components.dying())
+	var vel = ECS.get_component(entity_id, "velocity")
+	if vel:
+		vel.x = 0.0
+	var ai = ECS.get_component(entity_id, "ai")
+	if ai:
+		ai.state = "dead"  # AISystem has no "dead" case -> it idles; that's fine
+	var weapon = ECS.get_component(entity_id, "weapon")
+	if weapon:
+		weapon.hitbox_active = false
 	if entity_id == _player_entity_id:
 		GameEvents.player_died.emit()
-		var health = ECS.get_component(_player_entity_id, "health")
-		var pos = ECS.get_component(_player_entity_id, "position")
-		_respawn_player_state(health, pos, _player_spawn)
-		var node = ECS.get_entity_node(_player_entity_id)
-		if node:
-			node.position = _player_spawn
-			if node is CharacterBody2D:
-				node.velocity = Vector2.ZERO
-		GameEvents.ui_update_health.emit(health.current, health.max)
-		print("Player respawned")
-		if _current_arena >= 0:
-			_restore_arena(_current_arena)
-	else:
-		var enemy = ECS.get_component(entity_id, "enemy")
-		var enemy_type = enemy.type if enemy else "unknown"
-		GameEvents.enemy_killed.emit(entity_id, enemy_type)
 
-		# Give XP
-		GameState.add_xp(25)
-		GameState.add_currency("neon_yen", 10)
 
-		# Destroy enemy
-		var node = ECS.get_entity_node(entity_id)
-		if node:
-			node.queue_free()
-		ECS.destroy_entity(entity_id)
+func _process_dying(delta: float) -> void:
+	for eid in ECS.get_entities_with("dying"):
+		var d = ECS.get_component(eid, "dying")
+		d.timer -= delta
+		if d.timer > 0.0:
+			continue
+		if eid == _player_entity_id:
+			_finish_player_death(eid)
+		else:
+			_finish_enemy_death(eid)
+
+
+func _finish_player_death(eid: int) -> void:
+	ECS.remove_component(eid, "dying")
+	var health = ECS.get_component(eid, "health")
+	var pos = ECS.get_component(eid, "position")
+	_respawn_player_state(health, pos, _player_spawn)
+	var node = ECS.get_entity_node(eid)
+	if node:
+		node.position = _player_spawn
+		if node is CharacterBody2D:
+			node.velocity = Vector2.ZERO
+	GameEvents.ui_update_health.emit(health.current, health.max)
+	print("Player respawned")
+	if _current_arena >= 0:
+		_restore_arena(_current_arena)
+
+
+func _finish_enemy_death(eid: int) -> void:
+	var enemy = ECS.get_component(eid, "enemy")
+	var enemy_type = enemy.type if enemy else "unknown"
+	GameEvents.enemy_killed.emit(eid, enemy_type)
+
+	# Give XP
+	GameState.add_xp(25)
+	GameState.add_currency("neon_yen", 10)
+
+	# Destroy enemy (this also removes its dying component)
+	var node = ECS.get_entity_node(eid)
+	if node:
+		node.queue_free()
+	ECS.destroy_entity(eid)
 
 
 func _on_momentum_changed(entity_id: int, current: float, max_val: float) -> void:

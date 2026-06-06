@@ -288,3 +288,8 @@ static func tag_interactable() -> Dictionary:
 
 static func tag_hazard() -> Dictionary:
 	return { "is_hazard": true }
+
+
+## Marks an entity as dying (plays death anim, then despawns/respawns).
+static func dying() -> Dictionary:
+	return {"timer": 0.6}
