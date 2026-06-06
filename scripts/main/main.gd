@@ -13,6 +13,9 @@ const FK2 := "res://assets/FreeKnight_v1/Colour2/NoOutline/120x80_PNGSheets/"
 var _player_entity_id: int = -1
 var _player_spawn: Vector2
 var _echo_was_ready: bool = false
+var _arenas_activated: Array = []
+var _arena_enemies: Dictionary = {}  # arena_index -> Array[entity_id]
+var _current_arena: int = -1
 
 
 static func archetype(kind: String) -> Dictionary:
@@ -294,6 +297,17 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	return entity_id
 
 
+func _activate_arena(index: int) -> void:
+	_arenas_activated.append(index)
+	_current_arena = index
+	var arena = LevelOne.arenas()[index]
+	_player_spawn = arena.checkpoint
+	var ids: Array = []
+	for spec in arena.enemies:
+		ids.append(_spawn_enemy(spec[1], spec[0]))
+	_arena_enemies[index] = ids
+
+
 func _create_test_platforms() -> void:
 	# Create a simple floor platform
 	var floor_node = StaticBody2D.new()
@@ -357,6 +371,11 @@ func _process(_delta: float) -> void:
 	var player_pos = ECS.get_component(_player_entity_id, "position")
 	if player_pos:
 		camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
+
+		var px = ECS.get_component(_player_entity_id, "position").x
+		var idx = LevelOne.arena_to_activate(px, _arenas_activated)
+		if idx >= 0:
+			_activate_arena(idx)
 
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
