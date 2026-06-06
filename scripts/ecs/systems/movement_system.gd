@@ -20,6 +20,12 @@ func process(delta: float) -> void:
 		pos.previous_x = pos.x
 		pos.previous_y = pos.y
 
+		# Advance platformer timers EVERY frame — before any dodge/dash early-continue.
+		# (dash duration/cooldown, jump buffer, wall-run live here; if this were skipped
+		# during a dash the dash would never end.)
+		if platformer:
+			_update_platformer_timers(platformer, collision, delta)
+
 		# Skip if dodging (handled by dodge system)
 		if dodge_data and dodge_data.is_dodging:
 			_apply_dodge_movement(entity_id, pos, vel, dodge_data, delta)
@@ -44,7 +50,6 @@ func process(delta: float) -> void:
 		# Apply gravity
 		if platformer:
 			_apply_gravity(vel, platformer, collision, delta)
-			_update_platformer_timers(platformer, collision, delta)
 
 		# Wall slide / climb
 		if platformer and collision and collision.on_wall and not collision.on_ground:
