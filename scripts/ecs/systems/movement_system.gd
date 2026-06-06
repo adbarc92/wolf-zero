@@ -31,9 +31,28 @@ func process(delta: float) -> void:
 			_apply_dodge_movement(entity_id, pos, vel, dodge_data, delta)
 			continue
 
+		# Slide trigger: dash + crouch on the ground => slide (fast, low, i-frames)
+		if platformer and input and input.dash_pressed and input.crouch_pressed \
+				and collision and collision.on_ground and not platformer.is_sliding \
+				and not platformer.is_dashing and platformer.dash_cooldown <= 0:
+			platformer.is_sliding = true
+			platformer.slide_timer = platformer.slide_duration
+			platformer.dash_cooldown = 0.6
+			var h = get_component(entity_id, "health")
+			if h:
+				h.invincible = true
+				h.invincibility_timer = platformer.slide_duration
+
+		# Skip if sliding
+		if platformer and platformer.is_sliding:
+			var dir = input.facing if input else 1
+			vel.x = dir * platformer.slide_speed
+			continue
+
 		# Dash trigger
 		if platformer and input and input.dash_pressed and platformer.has_dash \
-				and not platformer.is_dashing and platformer.dash_cooldown <= 0:
+				and not platformer.is_dashing and platformer.dash_cooldown <= 0 \
+				and not platformer.is_sliding:
 			platformer.is_dashing = true
 			platformer.dash_duration = 0.2
 			platformer.dash_cooldown = 0.6
@@ -134,6 +153,13 @@ func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, de
 		if platformer.dash_duration <= 0:
 			platformer.is_dashing = false
 			platformer.dash_duration = 0.2  # Reset
+
+	# Slide duration
+	if platformer.is_sliding:
+		platformer.slide_timer -= delta
+		if platformer.slide_timer <= 0.0:
+			platformer.is_sliding = false
+			platformer.slide_timer = 0.0
 
 	# Wall run
 	if collision and collision.on_wall and not collision.on_ground:

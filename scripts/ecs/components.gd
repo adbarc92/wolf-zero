@@ -199,6 +199,10 @@ static func platformer(jump_force: float = -600.0) -> Dictionary:
 		"dash_duration": 0.2,
 		"dash_speed": 800.0,
 		"is_dashing": false,
+		"is_sliding": false,
+		"slide_timer": 0.0,
+		"slide_duration": 0.35,
+		"slide_speed": 700.0,
 	}
 
 
