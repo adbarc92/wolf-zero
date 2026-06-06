@@ -46,9 +46,24 @@ func process(delta: float) -> void:
 			_apply_gravity(vel, platformer, collision, delta)
 			_update_platformer_timers(platformer, collision, delta)
 
+		# Wall slide / climb
+		if platformer and collision and collision.on_wall and not collision.on_ground:
+			var climbing: bool = input != null and input.jump_pressed and platformer.wall_run_timer > 0.0
+			vel.y = wall_adjust_velocity_y(vel.y, true, climbing, 120.0)
+
 		# Apply friction when no input
 		if input and input.move_direction == 0:
 			_apply_friction(vel, delta)
+
+
+## Adjust vertical velocity for wall interactions.
+## on_wall: touching a wall and airborne. climbing: holding the climb input with time left.
+static func wall_adjust_velocity_y(vy: float, on_wall: bool, climbing: bool, slide_speed: float) -> float:
+	if not on_wall:
+		return vy
+	if climbing:
+		return -slide_speed * 1.5
+	return min(vy, slide_speed)
 
 
 func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float) -> void:
