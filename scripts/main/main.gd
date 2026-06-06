@@ -308,6 +308,22 @@ func _activate_arena(index: int) -> void:
 	_arena_enemies[index] = ids
 
 
+func _restore_arena(index: int) -> void:
+	# Despawn any survivors from this arena.
+	for eid in _arena_enemies.get(index, []):
+		if ECS.entity_exists(eid):
+			var n = ECS.get_entity_node(eid)
+			if n:
+				n.queue_free()
+			ECS.destroy_entity(eid)
+	# Re-spawn the roster.
+	var arena = LevelOne.arenas()[index]
+	var ids: Array = []
+	for spec in arena.enemies:
+		ids.append(_spawn_enemy(spec[1], spec[0]))
+	_arena_enemies[index] = ids
+
+
 func _create_test_platforms() -> void:
 	# Create a simple floor platform
 	var floor_node = StaticBody2D.new()
@@ -457,6 +473,8 @@ func _on_entity_died(entity_id: int) -> void:
 				node.velocity = Vector2.ZERO
 		GameEvents.ui_update_health.emit(health.current, health.max)
 		print("Player respawned")
+		if _current_arena >= 0:
+			_restore_arena(_current_arena)
 	else:
 		var enemy = ECS.get_component(entity_id, "enemy")
 		var enemy_type = enemy.type if enemy else "unknown"

@@ -28,6 +28,13 @@ static func arenas() -> Array:
 			["elite_oni", Vector2(3650, 540)]]},
 	]
 
+## Enemy roster for a given arena index, or empty if out of range.
+static func roster_for(index: int) -> Array:
+	var defs := arenas()
+	if index < 0 or index >= defs.size():
+		return []
+	return defs[index].enemies
+
 ## Index of the first not-yet-activated arena the player has reached, else -1.
 static func arena_to_activate(player_x: float, activated: Array) -> int:
 	var defs := arenas()
