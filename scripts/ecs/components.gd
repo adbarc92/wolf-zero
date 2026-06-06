@@ -91,6 +91,19 @@ static func weapon(damage: int = 10, attack_speed: float = 0.3) -> Dictionary:
 	}
 
 
+## Projectile (kinematic, travels in a direction until it hits or expires)
+static func projectile(damage: int = 8, speed: float = 600.0, team: String = "enemy") -> Dictionary:
+	return {
+		"damage": damage,
+		"speed": speed,
+		"direction": 1,
+		"team": team,
+		"lifetime": 3.0,
+		"elapsed": 0.0,
+		"radius": 16.0,
+	}
+
+
 ## Momentum gauge (combat resource)
 static func momentum(max_value: float = 100.0) -> Dictionary:
 	return {
@@ -244,6 +257,7 @@ static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 		"has_armor": false,
 		"armor_hits": 0,
 		"facing": 1,
+		"is_ranged": false,
 	}
 
 
