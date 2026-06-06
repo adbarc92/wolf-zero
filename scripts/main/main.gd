@@ -15,6 +15,22 @@ var _player_spawn: Vector2
 var _echo_was_ready: bool = false
 
 
+static func archetype(kind: String) -> Dictionary:
+	match kind:
+		"cyber_ashigaru":
+			return {"health": 30, "damage": 8, "speed": 260.0, "armor_hits": 0,
+				"is_ranged": true, "detection": 420.0, "attack_range": 320.0, "tint": Color(0.7, 1.0, 0.8)}
+		"oni_mech":
+			return {"health": 120, "damage": 20, "speed": 140.0, "armor_hits": 3,
+				"is_ranged": false, "detection": 300.0, "attack_range": 60.0, "tint": Color(1.0, 0.6, 0.5)}
+		"elite_oni":
+			return {"health": 200, "damage": 26, "speed": 170.0, "armor_hits": 4,
+				"is_ranged": false, "detection": 380.0, "attack_range": 64.0, "tint": Color(1.0, 0.3, 0.3)}
+		_:
+			return {"health": 50, "damage": 10, "speed": 200.0, "armor_hits": 0,
+				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
+
+
 func _ready() -> void:
 	_initialize_ecs()
 	_connect_signals()
@@ -38,6 +54,7 @@ func _initialize_ecs() -> void:
 	ECS.register_system(PhysicsSyncSystem.new())
 	ECS.register_system(EchoSystem.new())
 	ECS.register_system(CombatSystem.new())
+	ECS.register_system(ProjectileSystem.new())
 	ECS.register_system(MomentumSystem.new())
 	ECS.register_system(HealthSystem.new())
 
@@ -116,8 +133,10 @@ func _spawn_test_scene() -> void:
 	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
 
-	# Spawn a test enemy
+	# Spawn a test enemy roster
 	_spawn_enemy(Vector2(600, 400), "ronin_drone")
+	_spawn_enemy(Vector2(1000, 400), "cyber_ashigaru")
+	_spawn_enemy(Vector2(1400, 400), "oni_mech")
 
 	# Create test platforms
 	_create_test_platforms()
@@ -212,17 +231,28 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	ECS.add_component(entity_id, "sprite", Components.sprite())
 	ECS.get_component(entity_id, "sprite").frame_set = "enemy"
 
-	# Adjust health for solo mode
-	var base_health = 50
+	# Apply archetype-driven setup
+	var arch := archetype(enemy_type)
+	var base_health = int(arch.health)
 	if GameState.is_solo:
 		base_health = int(base_health * 0.85)  # 15% reduction
 	ECS.add_component(entity_id, "health", Components.health(base_health))
-
-	ECS.add_component(entity_id, "weapon", Components.weapon(10, 0.5))
+	ECS.add_component(entity_id, "weapon", Components.weapon(int(arch.damage), 0.5))
 	ECS.add_component(entity_id, "platformer", Components.platformer())
 	ECS.add_component(entity_id, "ai", Components.ai("patrol"))
 	ECS.add_component(entity_id, "enemy", Components.enemy(enemy_type))
 	ECS.add_component(entity_id, "tag_enemy", Components.tag_enemy())
+
+	# Apply archetype values
+	var avel = ECS.get_component(entity_id, "velocity"); avel.max_speed = arch.speed
+	var aenemy = ECS.get_component(entity_id, "enemy")
+	aenemy.is_ranged = arch.is_ranged
+	aenemy.has_armor = arch.armor_hits > 0
+	aenemy.armor_hits = arch.armor_hits
+	var aai = ECS.get_component(entity_id, "ai")
+	aai.detection_range = arch.detection
+	aai.attack_range = arch.attack_range
+	ECS.get_component(entity_id, "sprite").modulate = arch.tint
 
 	# Set up patrol points
 	var ai = ECS.get_component(entity_id, "ai")
@@ -259,6 +289,9 @@ func _create_test_platforms() -> void:
 	_add_platform(Vector2(400, 450), Vector2(200, 20))
 	_add_platform(Vector2(700, 350), Vector2(150, 20))
 	_add_platform(Vector2(1000, 400), Vector2(180, 20))
+
+	# Tall test wall
+	_add_platform(Vector2(1700, 450), Vector2(40, 300))
 
 
 func _add_platform(position: Vector2, size: Vector2) -> void:
