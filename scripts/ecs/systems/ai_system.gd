@@ -168,6 +168,19 @@ func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: 
 		var target_pos = ecs.get_component(ai.target_entity, "position")
 		if target_pos and enemy:
 			enemy.facing = -1 if target_pos.x < pos.x else 1
+		if enemy and enemy.get("is_ranged", false):
+			var proj_sys = ecs.get_system(ProjectileSystem)
+			if proj_sys:
+				var dir = enemy.facing
+				var from = Vector2(pos.x + dir * 30.0, pos.y)
+				var dmg = weapon.damage if weapon else 8
+				proj_sys.spawn(from, dir, "enemy", dmg)
+			ai.attack_cooldown = 1.2
+			ai.state = "chase"
+			if enemy:
+				enemy.is_telegraphing = false
+				enemy.telegraph_timer = 0.0
+			return
 		weapon.is_attacking = true
 		weapon.hitbox_active = true
 		weapon.attack_type = "enemy"
