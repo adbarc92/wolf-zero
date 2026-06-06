@@ -6,6 +6,10 @@ extends ECSSystem
 ## Named SpriteFrames sets, injected by main.gd (e.g. {"player":..., "enemy":...}).
 var frame_sets: Dictionary = {}
 
+var _transient: Dictionary = {}     # entity_id -> {clip, time_left}
+var _last_facing: Dictionary = {}   # entity_id -> int
+var _last_crouch: Dictionary = {}   # entity_id -> bool
+
 
 ## Resolve a frame-set name to a SpriteFrames, falling back to "player".
 func frames_for(set_name: String) -> SpriteFrames:
@@ -37,12 +41,18 @@ static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictiona
 	if weapon and weapon.get("is_attacking", false):
 		var atype: String = weapon.get("attack_type", "none")
 		if atype == "light":
+			if crouching:
+				return "crouch_attack"
+			if abs(vel.get("x", 0.0)) < 1.0:
+				return "light_%d_nomove" % max(1, weapon.get("combo_current", 1))
 			return "light_%d" % max(1, weapon.get("combo_current", 1))
 		if atype.begins_with("heavy"):
 			return atype
 	if on_wall:
 		return "wall_climb" if climbing else "wall_slide"
 	if collision and not collision.get("on_ground", true):
+		if abs(vel.get("y", 0.0)) < 80.0:
+			return "jump_fall_inbetween"
 		return "fall" if vel.get("y", 0.0) > 0.0 else "jump"
 	if crouching:
 		return "crouch_walk" if abs(vel.get("x", 0.0)) > 1.0 else "crouch"
@@ -51,7 +61,7 @@ static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictiona
 	return "idle"
 
 
-func process(_delta: float) -> void:
+func process(delta: float) -> void:
 	for entity_id in get_entities():
 		var node = get_node(entity_id)
 		if not (node is Node2D):
@@ -81,6 +91,28 @@ func process(_delta: float) -> void:
 			vel if vel else {}, collision if collision else {},
 			weapon if weapon else {}, dodge if dodge else {},
 			platformer if platformer else {}, crouching, hurt, on_wall, climbing, dead, sliding)
+
+		# Turn-around transient (grounded facing flip)
+		if input and collision and collision.get("on_ground", false):
+			var lf = _last_facing.get(entity_id, input.facing)
+			if lf != input.facing:
+				_transient[entity_id] = {"clip": "turn_around", "time_left": 0.15}
+			_last_facing[entity_id] = input.facing
+		# Crouch-transition transient (crouch just pressed)
+		var was_crouch = _last_crouch.get(entity_id, false)
+		if crouching and not was_crouch:
+			_transient[entity_id] = {"clip": "crouch_transition", "time_left": 0.12}
+		_last_crouch[entity_id] = crouching
+		# Apply transient only over low-priority derived clips
+		if _transient.has(entity_id):
+			var t = _transient[entity_id]
+			t.time_left -= delta
+			if t.time_left <= 0.0:
+				_transient.erase(entity_id)
+			elif clip in ["idle", "run", "crouch", "crouch_walk"] \
+					and anim_node.sprite_frames and anim_node.sprite_frames.has_animation(t.clip):
+				clip = t.clip
+
 		sprite_comp.animation = clip
 
 		if anim_node.sprite_frames and anim_node.sprite_frames.has_animation(clip):

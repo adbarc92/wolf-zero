@@ -33,8 +33,9 @@ func test_dash_overrides_run():
 	assert_eq(anim, "dash")
 
 func test_attack_clip_uses_combo_index():
+	# Moving light attack uses the lunge variant indexed by combo.
 	var anim = Anim.derive_clip(
-		{"x": 0.0, "y": 0.0}, {"on_ground": true},
+		{"x": 200.0, "y": 0.0}, {"on_ground": true},
 		{"is_attacking": true, "attack_type": "light", "combo_current": 3},
 		{"is_dodging": false}, {"is_dashing": false})
 	assert_eq(anim, "light_3")

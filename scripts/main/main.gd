@@ -95,6 +95,15 @@ func _build_player_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK + "_WallSlide.png"), 120, 80, 10.0)
 	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK + "_WallClimb.png"), 120, 80, 12.0)
 	SpriteFramesBuilder.add_strip(sf, "death", load(FK + "_Death.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "jump_fall_inbetween", load(FK + "_JumpFallInbetween.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "turn_around", load(FK + "_TurnAround.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "crouch_transition", load(FK + "_CrouchTransition.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "crouch_attack", load(FK + "_CrouchAttack.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_1_nomove", load(FK + "_AttackNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_2_nomove", load(FK + "_Attack2NoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_3_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_4_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_5_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
 	return sf
 
 
@@ -110,6 +119,15 @@ func _build_enemy_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK2 + "_WallSlide.png"), 120, 80, 10.0)
 	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK2 + "_WallClimb.png"), 120, 80, 12.0)
 	SpriteFramesBuilder.add_strip(sf, "death", load(FK2 + "_Death.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "jump_fall_inbetween", load(FK2 + "_JumpFallInbetween.png"), 120, 80, 10.0, false)
+	SpriteFramesBuilder.add_strip(sf, "turn_around", load(FK2 + "_TurnAround.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "crouch_transition", load(FK2 + "_CrouchTransition.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "crouch_attack", load(FK2 + "_CrouchAttack.png"), 120, 80, 14.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_1_nomove", load(FK2 + "_AttackNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_2_nomove", load(FK2 + "_Attack2NoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_3_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_4_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
+	SpriteFramesBuilder.add_strip(sf, "light_5_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
 	return sf
 
 
