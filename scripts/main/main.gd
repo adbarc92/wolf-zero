@@ -130,18 +130,19 @@ func _connect_signals() -> void:
 
 
 func _spawn_test_scene() -> void:
-	# Spawn player
-	_player_spawn = Vector2(200, 400)
+	_player_spawn = LevelOne.SPAWN
 	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
+	_build_level()
 
-	# Spawn a test enemy roster
-	_spawn_enemy(Vector2(600, 400), "ronin_drone")
-	_spawn_enemy(Vector2(1000, 400), "cyber_ashigaru")
-	_spawn_enemy(Vector2(1400, 400), "oni_mech")
 
-	# Create test platforms
-	_create_test_platforms()
+func _build_level() -> void:
+	for p in LevelOne.platforms():
+		_add_platform(p[0], p[1])
+	camera.limit_left = 0
+	camera.limit_right = int(LevelOne.EXTENT_X)
+	camera.limit_top = -400
+	camera.limit_bottom = int(LevelOne.FLOOR_Y) + 120
 
 
 func _spawn_player(position: Vector2) -> int:
@@ -329,7 +330,7 @@ func _process(_delta: float) -> void:
 	# Update camera to follow player
 	var player_pos = ECS.get_component(_player_entity_id, "position")
 	if player_pos:
-		camera.position = Vector2(player_pos.x, player_pos.y)
+		camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
 
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
