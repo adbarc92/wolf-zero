@@ -16,6 +16,7 @@ var _echo_was_ready: bool = false
 var _arenas_activated: Array = []
 var _arena_enemies: Dictionary = {}  # arena_index -> Array[entity_id]
 var _current_arena: int = -1
+var _won: bool = false
 
 
 static func archetype(kind: String) -> Dictionary:
@@ -172,6 +173,12 @@ func _build_level() -> void:
 	camera.limit_right = int(LevelOne.EXTENT_X)
 	camera.limit_top = -400
 	camera.limit_bottom = int(LevelOne.FLOOR_Y) + 120
+
+	var goal := ColorRect.new()
+	goal.size = Vector2(20, 300)
+	goal.position = Vector2(LevelOne.GOAL_X, LevelOne.FLOOR_Y - 300)
+	goal.color = Color(0.0, 0.9, 1.0, 0.6)
+	game.get_node("World").add_child(goal)
 
 
 func _spawn_player(position: Vector2) -> int:
@@ -393,6 +400,14 @@ func _process(_delta: float) -> void:
 		if idx >= 0:
 			_activate_arena(idx)
 
+		var final_idx = LevelOne.arenas().size() - 1
+		var final_cleared = _arenas_activated.has(final_idx) \
+			and _arena_enemies.has(final_idx) \
+			and _living_count(_arena_enemies[final_idx]) == 0
+		if not _won and LevelOne.is_level_won(px, final_cleared):
+			_won = true
+			_show_victory()
+
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
 	if echo_data:
@@ -442,6 +457,14 @@ static func _is_victory(living_enemy_count: int) -> bool:
 	return living_enemy_count <= 0
 
 
+func _living_count(ids: Array) -> int:
+	var n := 0
+	for eid in ids:
+		if ECS.entity_exists(eid):
+			n += 1
+	return n
+
+
 func _show_victory() -> void:
 	if has_node("WinLayer"):
 		return
@@ -489,10 +512,6 @@ func _on_entity_died(entity_id: int) -> void:
 		if node:
 			node.queue_free()
 		ECS.destroy_entity(entity_id)
-
-		var remaining := ECS.get_entities_with("tag_enemy").size()
-		if _is_victory(remaining):
-			_show_victory()
 
 
 func _on_momentum_changed(entity_id: int, current: float, max_val: float) -> void:

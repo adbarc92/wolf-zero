@@ -42,3 +42,8 @@ static func arena_to_activate(player_x: float, activated: Array) -> int:
 		if not activated.has(i) and player_x >= defs[i].trigger_x:
 			return i
 	return -1
+
+
+## Win when the player passes the goal AND the final arena has been cleared.
+static func is_level_won(player_x: float, final_arena_cleared: bool) -> bool:
+	return final_arena_cleared and player_x >= GOAL_X
