@@ -84,6 +84,8 @@ func _build_player_frames() -> SpriteFrames:
 	SpriteFramesBuilder.add_strip(sf, "light_4", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
 	SpriteFramesBuilder.add_strip(sf, "light_5", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
 	SpriteFramesBuilder.add_strip(sf, "hit", load(FK + "_Hit.png"), 120, 80, 12.0, false)
+	SpriteFramesBuilder.add_strip(sf, "crouch", load(FK + "_Crouch.png"), 120, 80, 8.0)
+	SpriteFramesBuilder.add_strip(sf, "crouch_walk", load(FK + "_CrouchWalk.png"), 120, 80, 12.0)
 	return sf
 
 

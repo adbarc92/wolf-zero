@@ -43,9 +43,12 @@ func process(delta: float) -> void:
 			_apply_dash_movement(entity_id, pos, vel, platformer, input, delta)
 			continue
 
-		# Apply input-based horizontal movement
+		# Apply input-based horizontal movement (crouch slows you while grounded)
 		if input:
-			_apply_input_movement(vel, input, delta)
+			var move_scale := 1.0
+			if input.crouch_pressed and collision and collision.on_ground:
+				move_scale = 0.4
+			_apply_input_movement(vel, input, delta, move_scale)
 
 		# Apply gravity
 		if platformer:
@@ -71,8 +74,8 @@ static func wall_adjust_velocity_y(vy: float, on_wall: bool, climbing: bool, sli
 	return min(vy, slide_speed)
 
 
-func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float) -> void:
-	var target_speed = input.move_direction * vel.max_speed
+func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float, speed_scale: float = 1.0) -> void:
+	var target_speed = input.move_direction * vel.max_speed * speed_scale
 
 	if input.move_direction != 0:
 		# Accelerate toward target speed

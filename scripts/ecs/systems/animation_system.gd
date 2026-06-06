@@ -19,9 +19,9 @@ func _get_required_components() -> Array[String]:
 
 
 ## Pure derivation: highest-priority state wins.
-## Order: dodge -> dash -> attack -> airborne -> run -> idle.
+## Order: dodge -> dash -> attack -> airborne -> crouch -> run -> idle.
 static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictionary,
-		dodge: Dictionary, platformer: Dictionary) -> String:
+		dodge: Dictionary, platformer: Dictionary, crouching: bool = false) -> String:
 	if dodge and dodge.get("is_dodging", false):
 		return "roll"
 	if platformer and platformer.get("is_dashing", false):
@@ -34,6 +34,8 @@ static func derive_clip(vel: Dictionary, collision: Dictionary, weapon: Dictiona
 			return atype
 	if collision and not collision.get("on_ground", true):
 		return "fall" if vel.get("y", 0.0) > 0.0 else "jump"
+	if crouching:
+		return "crouch_walk" if abs(vel.get("x", 0.0)) > 1.0 else "crouch"
 	if abs(vel.get("x", 0.0)) > 1.0:
 		return "run"
 	return "idle"
@@ -56,10 +58,12 @@ func process(_delta: float) -> void:
 		var platformer = get_component(entity_id, "platformer")
 		var input = get_component(entity_id, "input_state")
 
+		var crouching: bool = input != null and input.get("crouch_pressed", false) \
+			and collision != null and collision.get("on_ground", false)
 		var clip := derive_clip(
 			vel if vel else {}, collision if collision else {},
 			weapon if weapon else {}, dodge if dodge else {},
-			platformer if platformer else {})
+			platformer if platformer else {}, crouching)
 		sprite_comp.animation = clip
 
 		if anim_node.sprite_frames and anim_node.sprite_frames.has_animation(clip):
