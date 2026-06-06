@@ -35,6 +35,7 @@ func _ready() -> void:
 	_initialize_ecs()
 	_connect_signals()
 	_setup_vfx_manager()
+	_setup_parallax()
 
 	# Dev-only on-screen input-action guide (F1 to toggle)
 	if OS.is_debug_build():
@@ -106,6 +107,31 @@ func _setup_vfx_manager() -> void:
 
 	# Set effect container for spawning VFX
 	VFXManager.set_effect_container(entities_node)
+
+
+func _setup_parallax() -> void:
+	var pbg := ParallaxBackground.new()
+	pbg.name = "Parallax"
+	_add_layer(pbg, "res://assets/MoonlitGraveyard/Background_0.png", 0.2, Vector2(2, 2))
+	_add_layer(pbg, "res://assets/MoonlitGraveyard/Background_1.png", 0.5, Vector2(2, 2))
+	add_child(pbg)
+
+
+func _add_layer(pbg: ParallaxBackground, path: String, scroll_scale: float, scale_v: Vector2) -> void:
+	var tex = load(path)
+	if tex == null:
+		push_warning("Parallax layer missing: " + path)
+		return
+	var layer := ParallaxLayer.new()
+	layer.motion_scale = Vector2(scroll_scale, scroll_scale)
+	layer.motion_mirroring = Vector2(tex.get_width() * scale_v.x, 0)
+	var spr := Sprite2D.new()
+	spr.texture = tex
+	spr.centered = false
+	spr.scale = scale_v
+	spr.position = Vector2(0, 0)
+	layer.add_child(spr)
+	pbg.add_child(layer)
 
 
 func _connect_signals() -> void:
