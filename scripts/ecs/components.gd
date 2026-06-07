@@ -284,6 +284,7 @@ static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 		"behavior": "melee",
 		"blink_timer": 2.5,
 		"cloak_timer": 0.0,
+		"support_timer": 3.0,
 	}
 
 

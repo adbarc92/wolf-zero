@@ -34,6 +34,9 @@ static func archetype(kind: String) -> Dictionary:
 		"shinobi_ghost":
 			return {"health": 40, "damage": 16, "speed": 300.0, "armor_hits": 0,
 				"is_ranged": false, "behavior": "shinobi", "detection": 500.0, "attack_range": 60.0, "tint": Color(0.5, 0.5, 0.7)}
+		"tech_priest":
+			return {"health": 35, "damage": 6, "speed": 230.0, "armor_hits": 0,
+				"is_ranged": false, "behavior": "support", "detection": 520.0, "attack_range": 40.0, "tint": Color(0.7, 0.9, 0.5)}
 		_:
 			return {"health": 50, "damage": 18, "speed": 200.0, "armor_hits": 0,
 				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
