@@ -20,39 +20,81 @@ func process(delta: float) -> void:
 		pos.previous_x = pos.x
 		pos.previous_y = pos.y
 
+		# Advance platformer timers EVERY frame — before any dodge/dash early-continue.
+		# (dash duration/cooldown, jump buffer, wall-run live here; if this were skipped
+		# during a dash the dash would never end.)
+		if platformer:
+			_update_platformer_timers(platformer, collision, delta)
+
 		# Skip if dodging (handled by dodge system)
 		if dodge_data and dodge_data.is_dodging:
 			_apply_dodge_movement(entity_id, pos, vel, dodge_data, delta)
 			continue
+
+		# Slide trigger: dash + crouch on the ground => slide (fast, low, i-frames)
+		if platformer and input and input.dash_pressed and input.crouch_pressed \
+				and collision and collision.on_ground and not platformer.is_sliding \
+				and not platformer.is_dashing and platformer.dash_cooldown <= 0:
+			platformer.is_sliding = true
+			platformer.slide_timer = platformer.slide_duration
+			platformer.dash_cooldown = 0.6
+			var h = get_component(entity_id, "health")
+			if h:
+				h.invincible = true
+				h.invincibility_timer = platformer.slide_duration
+
+		# Skip if sliding
+		if platformer and platformer.is_sliding:
+			var dir = input.facing if input else 1
+			vel.x = dir * platformer.slide_speed
+			continue
+
+		# Dash trigger
+		if platformer and input and input.dash_pressed and platformer.has_dash \
+				and not platformer.is_dashing and platformer.dash_cooldown <= 0 \
+				and not platformer.is_sliding:
+			platformer.is_dashing = true
+			platformer.dash_duration = 0.2
+			platformer.dash_cooldown = 0.6
 
 		# Skip if dashing
 		if platformer and platformer.is_dashing:
 			_apply_dash_movement(entity_id, pos, vel, platformer, input, delta)
 			continue
 
-		# Apply input-based horizontal movement
+		# Apply input-based horizontal movement (crouch slows you while grounded)
 		if input:
-			_apply_input_movement(vel, input, delta)
+			var move_scale := 1.0
+			if input.crouch_pressed and collision and collision.on_ground:
+				move_scale = 0.4
+			_apply_input_movement(vel, input, delta, move_scale)
 
 		# Apply gravity
 		if platformer:
 			_apply_gravity(vel, platformer, collision, delta)
-			_update_platformer_timers(platformer, collision, delta)
+
+		# Wall slide / climb
+		if platformer and collision and collision.on_wall and not collision.on_ground:
+			var climbing: bool = input != null and input.jump_pressed and platformer.wall_run_timer > 0.0
+			vel.y = wall_adjust_velocity_y(vel.y, true, climbing, 120.0)
 
 		# Apply friction when no input
 		if input and input.move_direction == 0:
 			_apply_friction(vel, delta)
 
-		# Update position
-		pos.x += vel.x * delta
-		pos.y += vel.y * delta
 
-		# Sync with Godot node if present
-		_sync_node_position(entity_id, pos)
+## Adjust vertical velocity for wall interactions.
+## on_wall: touching a wall and airborne. climbing: holding the climb input with time left.
+static func wall_adjust_velocity_y(vy: float, on_wall: bool, climbing: bool, slide_speed: float) -> float:
+	if not on_wall:
+		return vy
+	if climbing:
+		return -slide_speed * 1.5
+	return min(vy, slide_speed)
 
 
-func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float) -> void:
-	var target_speed = input.move_direction * vel.max_speed
+func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float, speed_scale: float = 1.0) -> void:
+	var target_speed = input.move_direction * vel.max_speed * speed_scale
 
 	if input.move_direction != 0:
 		# Accelerate toward target speed
@@ -83,25 +125,18 @@ func _apply_friction(vel: Dictionary, delta: float) -> void:
 	vel.x = move_toward(vel.x, 0, vel.friction * delta)
 
 
-func _apply_dodge_movement(entity_id: int, pos: Dictionary, vel: Dictionary, dodge: Dictionary, delta: float) -> void:
+func _apply_dodge_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, dodge: Dictionary, _delta: float) -> void:
 	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
-
-	pos.x += direction * dodge.dodge_speed * delta
 	vel.x = direction * dodge.dodge_speed
 	vel.y = 0  # No vertical movement during dodge
 
-	_sync_node_position(entity_id, pos)
 
-
-func _apply_dash_movement(entity_id: int, pos: Dictionary, vel: Dictionary, platformer: Dictionary, input: Dictionary, delta: float) -> void:
+func _apply_dash_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, platformer: Dictionary, _input: Dictionary, _delta: float) -> void:
+	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
-
-	pos.x += direction * platformer.dash_speed * delta
 	vel.x = direction * platformer.dash_speed
 	vel.y = 0  # No vertical movement during dash
-
-	_sync_node_position(entity_id, pos)
 
 
 func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, delta: float) -> void:
@@ -119,6 +154,13 @@ func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, de
 			platformer.is_dashing = false
 			platformer.dash_duration = 0.2  # Reset
 
+	# Slide duration
+	if platformer.is_sliding:
+		platformer.slide_timer -= delta
+		if platformer.slide_timer <= 0.0:
+			platformer.is_sliding = false
+			platformer.slide_timer = 0.0
+
 	# Wall run
 	if collision and collision.on_wall and not collision.on_ground:
 		if platformer.can_wall_run and platformer.wall_run_timer > 0:
@@ -127,7 +169,3 @@ func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, de
 		platformer.wall_run_timer = platformer.wall_run_duration
 
 
-func _sync_node_position(entity_id: int, pos: Dictionary) -> void:
-	var node = get_node(entity_id)
-	if node and node is Node2D:
-		node.position = Vector2(pos.x, pos.y)

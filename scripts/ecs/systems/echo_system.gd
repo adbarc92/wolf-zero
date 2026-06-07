@@ -38,7 +38,8 @@ func process(delta: float) -> void:
 
 func _process_recording(delta: float) -> void:
 	## Record player actions continuously
-	for entity_id in ecs.get_entities_with_all(["echo_data", "tag_player"]):
+	var recording_required: Array[String] = ["echo_data", "tag_player"]
+	for entity_id in ecs.get_entities_with_all(recording_required):
 		var echo_data = get_component(entity_id, "echo_data")
 		if not echo_data.is_recording:
 			continue
@@ -80,7 +81,8 @@ func _process_cooldowns(delta: float) -> void:
 
 
 func _process_activation() -> void:
-	for entity_id in ecs.get_entities_with_all(["echo_data", "input_state", "tag_player"]):
+	var activation_required: Array[String] = ["echo_data", "input_state", "tag_player"]
+	for entity_id in ecs.get_entities_with_all(activation_required):
 		var echo_data = get_component(entity_id, "echo_data")
 		var input = get_component(entity_id, "input_state")
 
@@ -104,8 +106,14 @@ func _spawn_echo(owner_id: int, echo_data: Dictionary) -> void:
 	if not pos:
 		return
 
-	# Create echo entity
-	var echo_id = ecs.create_entity()
+	# Create a render node so AnimationSystem draws the echo (translucent cyan).
+	var echo_node := Node2D.new()
+	echo_node.name = "Echo"
+	echo_node.position = Vector2(pos.x, pos.y)
+	var container = ecs.get_entity_node(owner_id)
+	if container and container.get_parent():
+		container.get_parent().add_child(echo_node)
+	var echo_id = ecs.create_entity_with_node(echo_node)
 
 	# Add components
 	ecs.add_component(echo_id, "position", Components.position(pos.x, pos.y))
@@ -160,6 +168,8 @@ func _process_playback(delta: float) -> void:
 		pos.y = frame.position.y
 		vel.x = frame.velocity.x
 		vel.y = frame.velocity.y
+		if abs(vel.x) < 1.0:
+			vel.x = float(frame.facing) * 50.0  # facing hint for combat (echo moves via position, not velocity)
 
 		if sprite:
 			sprite.animation = frame.animation

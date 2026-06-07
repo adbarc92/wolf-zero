@@ -29,7 +29,7 @@ var _node_entities: Dictionary = {}  # Node -> entity_id
 
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 
 func _physics_process(delta: float) -> void:

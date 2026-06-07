@@ -40,6 +40,8 @@ func process(delta: float) -> void:
 				_process_attack(entity_id, ai, enemy, delta)
 			"telegraph":
 				_process_telegraph(entity_id, ai, enemy, delta)
+			"stagger":
+				_process_stagger(entity_id, ai, delta)
 
 
 func _process_idle(entity_id: int, ai: Dictionary, pos: Dictionary, player_pos: Dictionary, player_id: int) -> void:
@@ -100,6 +102,18 @@ func _process_patrol(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dicti
 
 
 func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Dictionary, player_id: int, _delta: float) -> void:
+	# Aggro: a nearby echo decoy steals the enemy's attention.
+	if ai.can_be_distracted:
+		var echoes = ecs.get_entities_with("tag_echo")
+		for echo_id in echoes:
+			var echo_pos = ecs.get_component(echo_id, "position")
+			if echo_pos == null:
+				continue
+			var d_echo = Vector2(echo_pos.x - pos.x, echo_pos.y - pos.y).length()
+			if d_echo <= ai.detection_range and ai.target_entity != echo_id:
+				ai.target_entity = echo_id
+				break
+
 	# Check if target still valid
 	if ai.target_entity < 0 or not ecs.entity_exists(ai.target_entity):
 		ai.state = "idle"
@@ -147,14 +161,53 @@ func _process_telegraph(entity_id: int, ai: Dictionary, enemy: Dictionary, delta
 
 
 func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: float) -> void:
-	# Attack is handled by combat system via weapon component
-	# Just set state back to chase after attack
-	ai.attack_cooldown = 1.0  # Time between attacks
+	# Face the target and open the weapon hitbox for this attack.
+	var weapon = get_component(entity_id, "weapon")
+	var pos = get_component(entity_id, "position")
+	if weapon and pos and ai.target_entity >= 0 and ecs.entity_exists(ai.target_entity):
+		var target_pos = ecs.get_component(ai.target_entity, "position")
+		if target_pos and enemy:
+			enemy.facing = -1 if target_pos.x < pos.x else 1
+		if enemy and enemy.get("is_ranged", false):
+			var proj_sys = ecs.get_system(ProjectileSystem)
+			if proj_sys:
+				var dir = enemy.facing
+				var from = Vector2(pos.x + dir * 30.0, pos.y)
+				var dmg = weapon.damage if weapon else 8
+				proj_sys.spawn(from, dir, "enemy", dmg)
+			ai.attack_cooldown = 1.2
+			ai.state = "chase"
+			if enemy:
+				enemy.is_telegraphing = false
+				enemy.telegraph_timer = 0.0
+			return
+		weapon.is_attacking = true
+		weapon.hitbox_active = true
+		weapon.attack_type = "enemy"
+		weapon.attack_timer = weapon.attack_speed  # CombatSystem timers self-close the window
+
+	ai.attack_cooldown = 1.0  # time between attacks
 	ai.state = "chase"
 
 	if enemy:
 		enemy.is_telegraphing = false
 		enemy.telegraph_timer = 0
+
+
+func _process_stagger(entity_id: int, ai: Dictionary, delta: float) -> void:
+	var vel = get_component(entity_id, "velocity")
+	if vel:
+		vel.x = 0.0
+	var enemy = get_component(entity_id, "enemy")
+	if enemy:
+		enemy.is_telegraphing = false
+		enemy.telegraph_timer = 0.0
+	var weapon = get_component(entity_id, "weapon")
+	if weapon:
+		weapon.hitbox_active = false
+	ai.stagger_timer -= delta
+	if ai.stagger_timer <= 0.0:
+		ai.state = "chase"
 
 
 func _can_detect_player(ai: Dictionary, pos: Dictionary, player_pos: Dictionary) -> bool:

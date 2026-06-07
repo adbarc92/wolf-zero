@@ -45,6 +45,10 @@ func _process_combat_input(input: Dictionary) -> void:
 func _process_ability_input(input: Dictionary) -> void:
 	# Echo activation
 	input.echo_pressed = Input.is_action_just_pressed("echo_activate")
+	# Dash
+	input.dash_pressed = Input.is_action_just_pressed("dash")
+	# Parry
+	input.parry_pressed = Input.is_action_just_pressed("parry")
 
 
 func _get_attack_direction(input: Dictionary) -> Vector2:

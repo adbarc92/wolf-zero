@@ -39,6 +39,7 @@ static func sprite(texture_path: String = "", flip_h: bool = false) -> Dictionar
 		"frame": 0,
 		"visible": true,
 		"modulate": Color.WHITE,
+		"frame_set": "player",
 		"z_index": 0,
 	}
 
@@ -71,6 +72,7 @@ static func health(max_hp: int = 100) -> Dictionary:
 		"invincible": false,
 		"invincibility_timer": 0.0,
 		"invincibility_duration": 0.5,
+		"hurt_timer": 0.0,
 	}
 
 
@@ -87,6 +89,19 @@ static func weapon(damage: int = 10, attack_speed: float = 0.3) -> Dictionary:
 		"is_attacking": false,
 		"attack_type": "none",  # "light", "heavy_up", "heavy_forward", "heavy_down"
 		"hitbox_active": false,
+	}
+
+
+## Projectile (kinematic, travels in a direction until it hits or expires)
+static func projectile(damage: int = 8, speed: float = 600.0, team: String = "enemy") -> Dictionary:
+	return {
+		"damage": damage,
+		"speed": speed,
+		"direction": 1,
+		"team": team,
+		"lifetime": 3.0,
+		"elapsed": 0.0,
+		"radius": 16.0,
 	}
 
 
@@ -152,6 +167,8 @@ static func input_state() -> Dictionary:
 		"attack_heavy": false,
 		"attack_direction": Vector2.ZERO,
 		"dodge_pressed": false,
+		"dash_pressed": false,
+		"parry_pressed": false,
 		"echo_pressed": false,
 		"facing": 1,  # 1 right, -1 left
 	}
@@ -182,6 +199,21 @@ static func platformer(jump_force: float = -600.0) -> Dictionary:
 		"dash_duration": 0.2,
 		"dash_speed": 800.0,
 		"is_dashing": false,
+		"is_sliding": false,
+		"slide_timer": 0.0,
+		"slide_duration": 0.35,
+		"slide_speed": 700.0,
+	}
+
+
+## Parry window state
+static func parry() -> Dictionary:
+	return {
+		"is_parrying": false,
+		"parry_timer": 0.0,
+		"parry_window": 0.2,
+		"cooldown": 0.0,
+		"cooldown_duration": 0.5,
 	}
 
 
@@ -215,6 +247,7 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 		"patrol_index": 0,
 		"wait_timer": 0.0,
 		"attack_cooldown": 0.0,
+		"stagger_timer": 0.0,
 		"can_be_distracted": true,  # By Echo
 	}
 
@@ -228,6 +261,8 @@ static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 		"is_telegraphing": false,
 		"has_armor": false,
 		"armor_hits": 0,
+		"facing": 1,
+		"is_ranged": false,
 	}
 
 
@@ -257,3 +292,8 @@ static func tag_interactable() -> Dictionary:
 
 static func tag_hazard() -> Dictionary:
 	return { "is_hazard": true }
+
+
+## Marks an entity as dying (plays death anim, then despawns/respawns).
+static func dying() -> Dictionary:
+	return {"timer": 0.6}

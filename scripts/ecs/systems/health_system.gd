@@ -18,6 +18,9 @@ func process(delta: float) -> void:
 
 		_process_invincibility(entity_id, health, delta)
 
+		if health.hurt_timer > 0.0:
+			health.hurt_timer = max(0.0, health.hurt_timer - delta)
+
 
 func _process_invincibility(entity_id: int, health: Dictionary, delta: float) -> void:
 	if not health.invincible:

@@ -46,8 +46,7 @@ wolf-zero/
 │   │       └── ai_system.gd
 │   │
 │   ├── entities/              # Entity helpers
-│   │   ├── entity_factory.gd  # Factory for creating entities
-│   │   └── player_controller.gd # Godot physics bridge
+│   │   └── entity_factory.gd  # Factory for creating entities
 │   │
 │   └── main/                  # Main game controller
 │       └── main.gd

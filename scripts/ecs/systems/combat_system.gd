@@ -8,6 +8,7 @@ signal attack_hit(attacker_id: int, target_id: int, damage: int)
 signal combo_increased(entity_id: int, combo_count: int)
 signal entity_damaged(entity_id: int, damage: int, current_hp: int)
 signal entity_died(entity_id: int)
+signal parried(defender_id: int, attacker_id: int)
 
 
 func _get_required_components() -> Array[String]:
@@ -40,7 +41,8 @@ func _process_attack_timers(delta: float) -> void:
 
 
 func _process_attack_inputs() -> void:
-	for entity_id in ecs.get_entities_with_all(["weapon", "input_state"]):
+	var input_entities: Array[String] = ["weapon", "input_state"]
+	for entity_id in ecs.get_entities_with_all(input_entities):
 		var weapon = get_component(entity_id, "weapon")
 		var input = get_component(entity_id, "input_state")
 
@@ -70,8 +72,12 @@ func _start_light_attack(entity_id: int, weapon: Dictionary) -> void:
 
 	attack_started.emit(entity_id, "light_%d" % weapon.combo_current)
 
-	# Add momentum
-	_add_momentum(entity_id, "attack")
+	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
+	var momentum_system = ecs.get_system(MomentumSystem)
+	if momentum_system:
+		var momentum = get_component(entity_id, "momentum")
+		if momentum:
+			momentum_system.add_momentum(entity_id, momentum.gain_attack)
 
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
@@ -102,8 +108,12 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 
 	attack_started.emit(entity_id, weapon.attack_type)
 
-	# Add momentum
-	_add_momentum(entity_id, "attack")
+	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
+	var momentum_system = ecs.get_system(MomentumSystem)
+	if momentum_system:
+		var momentum = get_component(entity_id, "momentum")
+		if momentum:
+			momentum_system.add_momentum(entity_id, momentum.gain_attack)
 
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
@@ -111,6 +121,17 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 		var facing = input.facing if input else 1
 		var attack_pos = Vector2(pos.x + facing * 40, pos.y)
 		VFXManager.attack_effect(attack_pos, facing, weapon.attack_type)
+
+
+## Decide an attacker's facing: input_state.facing -> velocity sign -> stored enemy.facing.
+static func resolve_facing(input_state, velocity, enemy) -> int:
+	if input_state != null:
+		return input_state.facing
+	if velocity != null and abs(velocity.x) > 1.0:
+		return -1 if velocity.x < 0.0 else 1
+	if enemy != null:
+		return enemy.get("facing", 1)
+	return 1
 
 
 func _process_hitboxes() -> void:
@@ -121,15 +142,17 @@ func _process_hitboxes() -> void:
 			continue
 
 		var attacker_pos = get_component(attacker_id, "position")
-		var attacker_input = get_component(attacker_id, "input_state")
 		if not attacker_pos:
 			continue
 
-		var facing = attacker_input.facing if attacker_input else 1
-		var is_player = has_component(attacker_id, "tag_player")
+		var attacker_input = get_component(attacker_id, "input_state")
+		var attacker_vel = get_component(attacker_id, "velocity")
+		var attacker_enemy = get_component(attacker_id, "enemy")
+		var facing = resolve_facing(attacker_input, attacker_vel, attacker_enemy)
+		var is_player_team = has_component(attacker_id, "tag_player") or has_component(attacker_id, "tag_echo")
 
 		# Check against potential targets
-		var target_tag = "tag_enemy" if is_player else "tag_player"
+		var target_tag = "tag_enemy" if is_player_team else "tag_player"
 		for target_id in ecs.get_entities_with(target_tag):
 			if _check_hit(attacker_id, target_id, facing):
 				_apply_damage(attacker_id, target_id, weapon)
@@ -169,6 +192,31 @@ func _check_hit(attacker_id: int, target_id: int, facing: int) -> bool:
 
 
 func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void:
+	# Parry: a parrying target negates the hit, reflects damage, and staggers the attacker.
+	var target_parry = get_component(target_id, "parry")
+	if target_parry and target_parry.is_parrying:
+		target_parry.is_parrying = false
+		var atk_health = get_component(attacker_id, "health")
+		if atk_health:
+			var reflect: int = max(weapon.damage, 10)
+			atk_health.current -= reflect
+			entity_damaged.emit(attacker_id, reflect, atk_health.current)
+			if atk_health.current <= 0:
+				entity_died.emit(attacker_id)
+		var atk_ai = get_component(attacker_id, "ai")
+		if atk_ai:
+			atk_ai.state = "stagger"
+			atk_ai.stagger_timer = 1.0
+		var mom = get_component(target_id, "momentum")
+		var mom_sys = ecs.get_system(MomentumSystem)
+		if mom and mom_sys:
+			mom_sys.add_momentum(target_id, mom.gain_parry)
+		parried.emit(target_id, attacker_id)
+		if VFXManager:
+			VFXManager.screen_shake(0.5, 0.15)
+		weapon.hitbox_active = false  # consume the attack
+		return
+
 	var target_health = get_component(target_id, "health")
 	var target_enemy = get_component(target_id, "enemy")
 
@@ -188,6 +236,19 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 	target_health.current -= damage
 	target_health.invincible = true
 	target_health.invincibility_timer = target_health.invincibility_duration
+	target_health.hurt_timer = 0.25
+
+	# Knockback away from the attacker
+	var target_vel = get_component(target_id, "velocity")
+	var attacker_pos_k = get_component(attacker_id, "position")
+	var target_pos_k = get_component(target_id, "position")
+	if target_vel and attacker_pos_k and target_pos_k:
+		var dir := 1.0 if target_pos_k.x >= attacker_pos_k.x else -1.0
+		var knock := 250.0
+		if weapon.attack_type.begins_with("heavy"):
+			knock = 450.0
+		target_vel.x = dir * knock
+		target_vel.y = -120.0  # small pop
 
 	attack_hit.emit(attacker_id, target_id, damage)
 	entity_damaged.emit(target_id, damage, target_health.current)
@@ -206,24 +267,6 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 	weapon.hitbox_active = false
 
 
-func _add_momentum(entity_id: int, action_type: String) -> void:
-	var momentum = get_component(entity_id, "momentum")
-	if not momentum:
-		return
-
-	var gain = 0.0
-	match action_type:
-		"attack":
-			gain = momentum.gain_attack
-		"dodge":
-			gain = momentum.gain_dodge
-		"parry":
-			gain = momentum.gain_parry
-
-	momentum.current = min(momentum.current + gain, momentum.max)
-	momentum.decay_timer = momentum.decay_delay
-
-
 ## Apply damage to an entity from external source
 func apply_damage_to(target_id: int, damage: int, _source_id: int = -1) -> void:
 	var health = get_component(target_id, "health")
@@ -233,6 +276,7 @@ func apply_damage_to(target_id: int, damage: int, _source_id: int = -1) -> void:
 	health.current -= damage
 	health.invincible = true
 	health.invincibility_timer = health.invincibility_duration
+	health.hurt_timer = 0.25
 
 	entity_damaged.emit(target_id, damage, health.current)
 
