@@ -17,6 +17,7 @@ var _arenas_activated: Array = []
 var _arena_enemies: Dictionary = {}  # arena_index -> Array[entity_id]
 var _current_arena: int = -1
 var _won: bool = false
+var _audio: AudioManager
 
 
 static func archetype(kind: String) -> Dictionary:
@@ -40,6 +41,9 @@ func _ready() -> void:
 	_connect_signals()
 	_setup_vfx_manager()
 	_setup_parallax()
+
+	_audio = AudioManager.new()
+	add_child(_audio)
 
 	# Dev-only on-screen input-action guide (F1 to toggle)
 	if OS.is_debug_build():
@@ -171,6 +175,11 @@ func _connect_signals() -> void:
 		combat_system.entity_damaged.connect(_on_entity_damaged)
 		combat_system.entity_died.connect(_on_entity_died)
 		combat_system.parried.connect(_on_parried)
+		# SFX
+		combat_system.attack_started.connect(_on_sfx_attack_started)
+		combat_system.attack_hit.connect(_on_sfx_attack_hit)
+		combat_system.parried.connect(_on_sfx_parried)
+		combat_system.entity_died.connect(_on_sfx_entity_died)
 
 	# Connect momentum system signals
 	var momentum_system: MomentumSystem = ECS.get_system(MomentumSystem)
@@ -183,6 +192,18 @@ func _connect_signals() -> void:
 	if echo_system:
 		echo_system.echo_activated.connect(_on_echo_activated)
 		echo_system.echo_ended.connect(_on_echo_ended)
+		echo_system.echo_activated.connect(_on_sfx_echo)
+
+	# Connect SFX for jump / dodge / projectile systems
+	var jump_system = ECS.get_system(JumpSystem)
+	if jump_system:
+		jump_system.jumped.connect(_on_sfx_jumped)
+	var dodge_system = ECS.get_system(DodgeSystem)
+	if dodge_system:
+		dodge_system.dodge_started.connect(_on_sfx_dodge)
+	var projectile_system = ECS.get_system(ProjectileSystem)
+	if projectile_system:
+		projectile_system.projectile_hit.connect(_on_sfx_projectile_hit)
 
 
 func _spawn_test_scene() -> void:
@@ -601,3 +622,25 @@ func _on_echo_ended(_echo_entity_id: int) -> void:
 
 func _on_parried(_defender_id: int, _attacker_id: int) -> void:
 	print("Parry!")
+
+
+# =============================================================================
+# SFX HANDLERS
+# =============================================================================
+
+func _on_sfx_attack_started(_eid: int, _atype: String) -> void:
+	if _audio: _audio.play("slash")
+func _on_sfx_attack_hit(_aid: int, _tid: int, _dmg: int) -> void:
+	if _audio: _audio.play("hit")
+func _on_sfx_parried(_d: int, _a: int) -> void:
+	if _audio: _audio.play("parry")
+func _on_sfx_entity_died(_eid: int) -> void:
+	if _audio: _audio.play("death")
+func _on_sfx_jumped(_eid: int) -> void:
+	if _audio: _audio.play("jump")
+func _on_sfx_dodge(_eid: int) -> void:
+	if _audio: _audio.play("dodge")
+func _on_sfx_echo(_eid: int, _echo: int) -> void:
+	if _audio: _audio.play("echo")
+func _on_sfx_projectile_hit(_pid: int, _tid: int) -> void:
+	if _audio: _audio.play("hit_light")
