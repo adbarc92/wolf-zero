@@ -45,6 +45,9 @@ func _ready() -> void:
 	_audio = AudioManager.new()
 	add_child(_audio)
 
+	add_child(ScreenManager.new())
+	process_mode = Node.PROCESS_MODE_ALWAYS   # so _unhandled_input/_process run while paused
+
 	# Dev-only on-screen input-action guide (F1 to toggle)
 	if OS.is_debug_build():
 		add_child(DebugOverlay.new())
@@ -450,11 +453,23 @@ func _add_platform(position: Vector2, size: Vector2) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause"):
-		if GameState.current_state == GameState.State.PLAYING:
-			GameState.pause_game()
-		elif GameState.current_state == GameState.State.PAUSED:
-			GameState.resume_game()
+	match GameState.current_state:
+		GameState.State.MENU:
+			if event.is_action_pressed("ui_accept") or event.is_action_pressed("jump"):
+				_start_level()
+		GameState.State.PLAYING:
+			if event.is_action_pressed("pause"):
+				GameState.pause_game()
+		GameState.State.PAUSED:
+			if event.is_action_pressed("pause"):
+				GameState.resume_game()
+			elif event.is_action_pressed("restart"):
+				GameState.resume_game()
+				_restart_level()
+		GameState.State.VICTORY, GameState.State.GAME_OVER:
+			if event.is_action_pressed("restart"):
+				get_tree().paused = false
+				_restart_level()
 
 
 func _process(delta: float) -> void:
@@ -463,23 +478,25 @@ func _process(delta: float) -> void:
 	if _player_entity_id < 0:
 		return
 
-	# Update camera to follow player
-	var player_pos = ECS.get_component(_player_entity_id, "position")
-	if player_pos:
-		camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
+	if GameState.current_state == GameState.State.PLAYING:
+		# Update camera to follow player
+		var player_pos = ECS.get_component(_player_entity_id, "position")
+		if player_pos:
+			camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
 
-		var px = ECS.get_component(_player_entity_id, "position").x
-		var idx = LevelOne.arena_to_activate(px, _arenas_activated)
-		if idx >= 0:
-			_activate_arena(idx)
+			var px = ECS.get_component(_player_entity_id, "position").x
+			var idx = LevelOne.arena_to_activate(px, _arenas_activated)
+			if idx >= 0:
+				_activate_arena(idx)
 
-		var final_idx = LevelOne.arenas().size() - 1
-		var final_cleared = _arenas_activated.has(final_idx) \
-			and _arena_enemies.has(final_idx) \
-			and _living_count(_arena_enemies[final_idx]) == 0
-		if not _won and LevelOne.is_level_won(px, final_cleared):
-			_won = true
-			_show_victory()
+			var final_idx = LevelOne.arenas().size() - 1
+			var final_cleared = _arenas_activated.has(final_idx) \
+				and _arena_enemies.has(final_idx) \
+				and _living_count(_arena_enemies[final_idx]) == 0
+			if not _won and LevelOne.is_level_won(px, final_cleared):
+				_won = true
+				GameState.win_run()
+				get_tree().paused = true
 
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
@@ -588,6 +605,11 @@ func _process_dying(delta: float) -> void:
 
 func _finish_player_death(eid: int) -> void:
 	ECS.remove_component(eid, "dying")
+	if GameState.lose_life():
+		# Defeated: freeze the field under the DEFEAT overlay.
+		get_tree().paused = true
+		return
+	# Otherwise respawn at checkpoint (existing logic):
 	var health = ECS.get_component(eid, "health")
 	var pos = ECS.get_component(eid, "position")
 	_respawn_player_state(health, pos, _player_spawn)
