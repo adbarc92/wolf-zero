@@ -181,6 +181,7 @@ func _connect_signals() -> void:
 		combat_system.attack_started.connect(_on_sfx_attack_started)
 		combat_system.attack_hit.connect(_on_sfx_attack_hit)
 		combat_system.parried.connect(_on_sfx_parried)
+		combat_system.blocked.connect(_on_sfx_blocked)
 		combat_system.entity_died.connect(_on_sfx_entity_died)
 
 	# Connect momentum system signals
@@ -680,6 +681,8 @@ func _on_sfx_attack_hit(_aid: int, _tid: int, _dmg: int) -> void:
 	if _audio: _audio.play("hit")
 func _on_sfx_parried(_d: int, _a: int) -> void:
 	if _audio: _audio.play("parry")
+func _on_sfx_blocked(_d: int, _a: int) -> void:
+	if _audio: _audio.play("block")
 func _on_sfx_entity_died(_eid: int) -> void:
 	if _audio: _audio.play("death")
 func _on_sfx_jumped(_eid: int) -> void:

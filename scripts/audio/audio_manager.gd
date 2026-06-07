@@ -10,7 +10,7 @@ var _music: AudioStreamPlayer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	for n in ["slash", "hit", "hit_light", "jump", "dash", "dodge", "parry", "echo", "death"]:
+	for n in ["slash", "hit", "hit_light", "jump", "dash", "dodge", "parry", "block", "echo", "death"]:
 		_sounds[n] = SfxGenerator.make(n)
 	for i in range(POOL):
 		var p := AudioStreamPlayer.new()

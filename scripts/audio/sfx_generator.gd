@@ -27,9 +27,19 @@ static func make(name: String) -> AudioStreamWAV:
 		"dash":      return from_samples(_noise_sweep(0.18, 0.6, 0.9, 0.3))
 		"dodge":     return from_samples(_blip(0.12, 500.0, 300.0, 0.4))
 		"parry":     return from_samples(_chime(0.30, 1200.0, 0.6))
+		"block":     return from_samples(_mix(_noise_burst(0.08, 0.4), _blip(0.10, 180.0, 120.0, 0.4)))
 		"echo":      return from_samples(_chime(0.40, 700.0, 0.45))
 		"death":     return from_samples(_blip(0.45, 300.0, 80.0, 0.6))
 		_:           return from_samples(_noise_burst(0.05, 0.4))
+
+static func _mix(a: Array, b: Array) -> Array:
+	var n: int = max(a.size(), b.size())
+	var out := []; out.resize(n)
+	for i in range(n):
+		var av: float = a[i] if i < a.size() else 0.0
+		var bv: float = b[i] if i < b.size() else 0.0
+		out[i] = clampf(av + bv, -1.0, 1.0)
+	return out
 
 static func _env(i: int, n: int, attack: float) -> float:
 	var t := float(i) / float(n)

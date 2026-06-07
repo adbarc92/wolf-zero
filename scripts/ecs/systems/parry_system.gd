@@ -28,3 +28,5 @@ func process(delta: float) -> void:
 			parry.parry_timer = parry.parry_window
 			parry.cooldown = parry.cooldown_duration
 			parry_opened.emit(entity_id)
+
+		parry.is_blocking = input.parry_held and not parry.is_parrying

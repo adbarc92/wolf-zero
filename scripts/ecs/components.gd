@@ -169,6 +169,7 @@ static func input_state() -> Dictionary:
 		"dodge_pressed": false,
 		"dash_pressed": false,
 		"parry_pressed": false,
+		"parry_held": false,
 		"echo_pressed": false,
 		"facing": 1,  # 1 right, -1 left
 	}
@@ -214,6 +215,8 @@ static func parry() -> Dictionary:
 		"parry_window": 0.2,
 		"cooldown": 0.0,
 		"cooldown_duration": 0.5,
+		"is_blocking": false,
+		"block_damage_mult": 0.3,
 	}
 
 

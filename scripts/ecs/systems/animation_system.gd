@@ -121,6 +121,9 @@ func process(delta: float) -> void:
 		if input:
 			anim_node.flip_h = input.facing < 0
 		anim_node.modulate = sprite_comp.modulate
+		var pc = get_component(entity_id, "parry")
+		if pc and pc.get("is_blocking", false):
+			anim_node.modulate = Color(0.6, 0.8, 1.0)
 
 
 func _ensure_anim_node(node: Node, set_name: String) -> AnimatedSprite2D:
