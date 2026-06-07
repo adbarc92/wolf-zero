@@ -58,6 +58,7 @@ func _ready() -> void:
 func _initialize_ecs() -> void:
 	ECS.register_system(InputSystem.new())
 	ECS.register_system(AISystem.new())
+	ECS.register_system(BossSystem.new())
 	ECS.register_system(ParrySystem.new())
 	ECS.register_system(JumpSystem.new())
 	ECS.register_system(DodgeSystem.new())
@@ -379,6 +380,32 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	return entity_id
 
 
+func _spawn_boss(position: Vector2) -> int:
+	var node = CharacterBody2D.new()
+	node.name = "CrimsonRonin"
+	node.position = position
+	node.scale = Vector2(1.8, 1.8)
+	entities_node.add_child(node)
+	var cs = CollisionShape2D.new()
+	var shape = RectangleShape2D.new(); shape.size = Vector2(32, 64)
+	cs.shape = shape; node.add_child(cs)
+	var id = ECS.create_entity_with_node(node)
+	ECS.add_component(id, "position", Components.position(position.x, position.y))
+	ECS.add_component(id, "velocity", Components.velocity())
+	ECS.add_component(id, "collision", Components.collision(32, 64))
+	var spr = Components.sprite(); spr.frame_set = "enemy"; spr.modulate = Color(1.0, 0.25, 0.25)
+	ECS.add_component(id, "sprite", spr)
+	ECS.add_component(id, "health", Components.health(320))
+	ECS.add_component(id, "weapon", Components.weapon(22, 0.5))
+	ECS.add_component(id, "platformer", Components.platformer())
+	var en = Components.enemy("crimson_ronin"); en.facing = -1
+	ECS.add_component(id, "enemy", en)
+	ECS.add_component(id, "boss", Components.boss("Crimson Ronin"))
+	ECS.add_component(id, "tag_enemy", Components.tag_enemy())
+	GameEvents.ui_show_message.emit("Crimson Ronin", 2.5)
+	return id
+
+
 func _activate_arena(index: int) -> void:
 	_arenas_activated.append(index)
 	_current_arena = index
@@ -386,7 +413,10 @@ func _activate_arena(index: int) -> void:
 	_player_spawn = arena.checkpoint
 	var ids: Array = []
 	for spec in arena.enemies:
-		ids.append(_spawn_enemy(spec[1], spec[0]))
+		if spec[0] == "crimson_ronin":
+			ids.append(_spawn_boss(spec[1]))
+		else:
+			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
 
 
@@ -402,7 +432,10 @@ func _restore_arena(index: int) -> void:
 	var arena = LevelOne.arenas()[index]
 	var ids: Array = []
 	for spec in arena.enemies:
-		ids.append(_spawn_enemy(spec[1], spec[0]))
+		if spec[0] == "crimson_ronin":
+			ids.append(_spawn_boss(spec[1]))
+		else:
+			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
 
 
@@ -633,6 +666,11 @@ func _finish_enemy_death(eid: int) -> void:
 	# Give XP
 	GameState.add_xp(25)
 	GameState.add_currency("neon_yen", 10)
+
+	if ECS.has_component(eid, "boss") and not _won:
+		_won = true
+		GameState.win_run()
+		get_tree().paused = true
 
 	# Destroy enemy (this also removes its dying component)
 	var node = ECS.get_entity_node(eid)
