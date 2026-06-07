@@ -20,6 +20,9 @@ extends Control
 @onready var combo_counter: Label = %ComboCounter
 @onready var damage_numbers: Node2D = %DamageNumbers
 
+# Lives label (built in code, near the health bar)
+var _lives_label: Label
+
 # Boss bar (built in code, top-center, hidden unless a boss is active)
 var _boss_container: Control
 var _boss_bar: ColorRect
@@ -71,11 +74,16 @@ const COLOR_BOSS_FILL = Color(1.0, 0.2, 0.25, 1.0)
 
 func _ready() -> void:
 	_build_boss_bar()
+	_build_lives_label()
 	_connect_signals()
 	_initialize_bars()
 
 	# Hide combo counter initially
 	combo_counter.visible = false
+
+	# Initialize lives display and HUD visibility from current state
+	set_lives(GameState.lives)
+	_apply_visibility(GameState.current_state)
 
 
 func _process(delta: float) -> void:
@@ -102,6 +110,9 @@ func _connect_signals() -> void:
 	GameEvents.boss_spawned.connect(_on_boss_spawned)
 	GameEvents.boss_health.connect(_on_boss_health)
 	GameEvents.boss_defeated.connect(_on_boss_defeated)
+
+	GameEvents.lives_changed.connect(set_lives)
+	GameState.state_changed.connect(_on_state_changed)
 
 	# Connect to combat system for combos
 	if ECS:
@@ -387,6 +398,46 @@ func _on_boss_health(current: int, max_hp: int) -> void:
 func _on_boss_defeated() -> void:
 	if _boss_container:
 		_boss_container.visible = false
+
+
+# =============================================================================
+# LIVES
+# =============================================================================
+
+static func lives_text(n: int) -> String:
+	return "LIVES  %d" % n
+
+
+func _build_lives_label() -> void:
+	var label := Label.new()
+	label.name = "LivesLabel"
+	# Position near the health bar (top-left area, just below it)
+	label.position = Vector2(24.0, 64.0)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_font_size_override("font_size", 16)
+	add_child(label)
+	_lives_label = label
+
+
+func set_lives(n: int) -> void:
+	if _lives_label:
+		_lives_label.text = lives_text(n)
+
+
+# =============================================================================
+# HUD VISIBILITY
+# =============================================================================
+
+func _on_state_changed(new_state: GameState.State, _old_state: GameState.State) -> void:
+	_apply_visibility(new_state)
+
+
+func _apply_visibility(state: GameState.State) -> void:
+	visible = (state == GameState.State.PLAYING or state == GameState.State.PAUSED)
 
 
 # =============================================================================

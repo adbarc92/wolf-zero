@@ -101,7 +101,18 @@ func _process_patrol(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dicti
 			vel.x = direction * vel.max_speed * 0.5  # Patrol at half speed
 
 
+## The x just past the player, on the side opposite the shinobi (to flank).
+static func blink_target_x(player_x: float, self_x: float, offset: float = 160.0) -> float:
+	return player_x + (offset if self_x < player_x else -offset)
+
+
+## Heal amount clamped so it never exceeds max.
+static func support_heal(current: int, max_hp: int, amount: int) -> int:
+	return min(max_hp, current + amount)
+
+
 func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Dictionary, player_id: int, _delta: float) -> void:
+	var enemy = get_component(entity_id, "enemy")
 	# Aggro: a nearby echo decoy steals the enemy's attention.
 	if ai.can_be_distracted:
 		var echoes = ecs.get_entities_with("tag_echo")
@@ -133,6 +144,44 @@ func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictio
 		ai.target_entity = -1
 		enemy_lost_player.emit(entity_id)
 		return
+
+	if enemy and enemy.get("behavior", "melee") == "support":
+		# Keep distance from the player.
+		if vel and target_pos:
+			var to_player = target_pos.x - pos.x
+			if abs(to_player) < 260.0:
+				vel.x = -sign(to_player) * vel.max_speed   # flee
+			else:
+				vel.x = 0.0
+		# Periodic heal pulse to nearby wounded allies.
+		enemy.support_timer -= _delta
+		if enemy.support_timer <= 0.0:
+			enemy.support_timer = 3.0
+			for ally in ecs.get_entities_with("tag_enemy"):
+				if ally == entity_id:
+					continue
+				var apos = ecs.get_component(ally, "position")
+				var ah = ecs.get_component(ally, "health")
+				if apos and ah and Vector2(apos.x - pos.x, apos.y - pos.y).length() <= 400.0:
+					ah.current = support_heal(ah.current, ah.max, 12)
+		return
+
+	if enemy and enemy.get("behavior", "melee") == "shinobi":
+		var spr = get_component(entity_id, "sprite")
+		if enemy.cloak_timer > 0.0:
+			enemy.cloak_timer -= _delta
+			if spr: spr.modulate.a = 0.35
+		elif spr:
+			spr.modulate.a = 1.0
+		enemy.blink_timer -= _delta
+		if enemy.blink_timer <= 0.0 and target_pos:
+			pos.x = blink_target_x(target_pos.x, pos.x)
+			var n = ecs.get_entity_node(entity_id)
+			if n: n.position.x = pos.x
+			enemy.blink_timer = 2.5
+			enemy.cloak_timer = 0.5
+			if spr: spr.modulate.a = 0.35
+		# fall through to normal chase (range->telegraph->attack)
 
 	# Check if in attack range
 	if distance <= ai.attack_range and ai.attack_cooldown <= 0:

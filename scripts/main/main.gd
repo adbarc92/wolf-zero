@@ -31,6 +31,12 @@ static func archetype(kind: String) -> Dictionary:
 		"elite_oni":
 			return {"health": 200, "damage": 38, "speed": 170.0, "armor_hits": 4,
 				"is_ranged": false, "detection": 380.0, "attack_range": 64.0, "tint": Color(1.0, 0.3, 0.3)}
+		"shinobi_ghost":
+			return {"health": 40, "damage": 16, "speed": 300.0, "armor_hits": 0,
+				"is_ranged": false, "behavior": "shinobi", "detection": 500.0, "attack_range": 60.0, "tint": Color(0.5, 0.5, 0.7)}
+		"tech_priest":
+			return {"health": 35, "damage": 6, "speed": 230.0, "armor_hits": 0,
+				"is_ranged": false, "behavior": "support", "detection": 520.0, "attack_range": 40.0, "tint": Color(0.7, 0.9, 0.5)}
 		_:
 			return {"health": 50, "damage": 18, "speed": 200.0, "armor_hits": 0,
 				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
@@ -217,6 +223,7 @@ func _connect_signals() -> void:
 
 func _start_level() -> void:
 	GameState.begin_run()
+	GameEvents.lives_changed.emit(GameState.lives)
 	_arenas_activated.clear()
 	_arena_enemies.clear()
 	_current_arena = -1
@@ -369,6 +376,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	aenemy.is_ranged = arch.is_ranged
 	aenemy.has_armor = arch.armor_hits > 0
 	aenemy.armor_hits = arch.armor_hits
+	ECS.get_component(entity_id, "enemy").behavior = arch.get("behavior", "melee")
 	var aai = ECS.get_component(entity_id, "ai")
 	aai.detection_range = arch.detection
 	aai.attack_range = arch.attack_range
@@ -652,7 +660,9 @@ func _process_dying(delta: float) -> void:
 
 func _finish_player_death(eid: int) -> void:
 	ECS.remove_component(eid, "dying")
-	if GameState.lose_life():
+	var _run_over := GameState.lose_life()
+	GameEvents.lives_changed.emit(GameState.lives)
+	if _run_over:
 		# Defeated: freeze the field under the DEFEAT overlay.
 		get_tree().paused = true
 		return
