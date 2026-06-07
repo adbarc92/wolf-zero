@@ -23,7 +23,8 @@ static func arenas() -> Array:
 		{"trigger_x": 1300.0, "checkpoint": Vector2(1250, 540), "enemies": [
 			["ronin_drone", Vector2(1600, 540)], ["ronin_drone", Vector2(1850, 540)]]},
 		{"trigger_x": 2500.0, "checkpoint": Vector2(2450, 540), "enemies": [
-			["cyber_ashigaru", Vector2(2750, 430)], ["ronin_drone", Vector2(2950, 540)]]},
+			["cyber_ashigaru", Vector2(2750, 430)], ["ronin_drone", Vector2(2950, 540)],
+			["shinobi_ghost", Vector2(2850, 540)]]},
 		{"trigger_x": 3300.0, "checkpoint": Vector2(3250, 540), "enemies": [
 			["crimson_ronin", Vector2(3650, 540)]]},
 	]

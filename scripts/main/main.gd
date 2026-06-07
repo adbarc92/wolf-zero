@@ -31,6 +31,9 @@ static func archetype(kind: String) -> Dictionary:
 		"elite_oni":
 			return {"health": 200, "damage": 38, "speed": 170.0, "armor_hits": 4,
 				"is_ranged": false, "detection": 380.0, "attack_range": 64.0, "tint": Color(1.0, 0.3, 0.3)}
+		"shinobi_ghost":
+			return {"health": 40, "damage": 16, "speed": 300.0, "armor_hits": 0,
+				"is_ranged": false, "behavior": "shinobi", "detection": 500.0, "attack_range": 60.0, "tint": Color(0.5, 0.5, 0.7)}
 		_:
 			return {"health": 50, "damage": 18, "speed": 200.0, "armor_hits": 0,
 				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
@@ -365,6 +368,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	aenemy.is_ranged = arch.is_ranged
 	aenemy.has_armor = arch.armor_hits > 0
 	aenemy.armor_hits = arch.armor_hits
+	ECS.get_component(entity_id, "enemy").behavior = arch.get("behavior", "melee")
 	var aai = ECS.get_component(entity_id, "ai")
 	aai.detection_range = arch.detection
 	aai.attack_range = arch.attack_range
