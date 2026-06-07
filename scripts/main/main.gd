@@ -49,8 +49,7 @@ func _ready() -> void:
 	if OS.is_debug_build():
 		add_child(DebugOverlay.new())
 
-	# Start with a test level (remove this later)
-	call_deferred("_spawn_test_scene")
+	GameState.current_state = GameState.State.MENU
 
 
 func _initialize_ecs() -> void:
@@ -206,11 +205,36 @@ func _connect_signals() -> void:
 		projectile_system.projectile_hit.connect(_on_sfx_projectile_hit)
 
 
-func _spawn_test_scene() -> void:
+func _start_level() -> void:
+	GameState.begin_run()
+	_arenas_activated.clear()
+	_arena_enemies.clear()
+	_current_arena = -1
+	_won = false
 	_player_spawn = LevelOne.SPAWN
 	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
 	_build_level()
+
+
+func _clear_level() -> void:
+	ECS.clear_all()
+	for c in entities_node.get_children():
+		c.queue_free()
+	var world = game.get_node_or_null("World")
+	if world:
+		for c in world.get_children():
+			c.queue_free()
+	var win = get_node_or_null("WinLayer")
+	if win:
+		win.queue_free()
+	_player_entity_id = -1
+
+
+func _restart_level() -> void:
+	_clear_level()
+	await get_tree().process_frame
+	_start_level()
 
 
 func _build_level() -> void:
