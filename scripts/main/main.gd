@@ -17,21 +17,22 @@ var _arenas_activated: Array = []
 var _arena_enemies: Dictionary = {}  # arena_index -> Array[entity_id]
 var _current_arena: int = -1
 var _won: bool = false
+var _audio: AudioManager
 
 
 static func archetype(kind: String) -> Dictionary:
 	match kind:
 		"cyber_ashigaru":
-			return {"health": 30, "damage": 8, "speed": 260.0, "armor_hits": 0,
+			return {"health": 30, "damage": 14, "speed": 260.0, "armor_hits": 0,
 				"is_ranged": true, "detection": 420.0, "attack_range": 320.0, "tint": Color(0.7, 1.0, 0.8)}
 		"oni_mech":
-			return {"health": 120, "damage": 20, "speed": 140.0, "armor_hits": 3,
+			return {"health": 120, "damage": 30, "speed": 140.0, "armor_hits": 3,
 				"is_ranged": false, "detection": 300.0, "attack_range": 60.0, "tint": Color(1.0, 0.6, 0.5)}
 		"elite_oni":
-			return {"health": 200, "damage": 26, "speed": 170.0, "armor_hits": 4,
+			return {"health": 200, "damage": 38, "speed": 170.0, "armor_hits": 4,
 				"is_ranged": false, "detection": 380.0, "attack_range": 64.0, "tint": Color(1.0, 0.3, 0.3)}
 		_:
-			return {"health": 50, "damage": 10, "speed": 200.0, "armor_hits": 0,
+			return {"health": 50, "damage": 18, "speed": 200.0, "armor_hits": 0,
 				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
 
 
@@ -41,17 +42,23 @@ func _ready() -> void:
 	_setup_vfx_manager()
 	_setup_parallax()
 
+	_audio = AudioManager.new()
+	add_child(_audio)
+
+	add_child(ScreenManager.new())
+	process_mode = Node.PROCESS_MODE_ALWAYS   # so _unhandled_input/_process run while paused
+
 	# Dev-only on-screen input-action guide (F1 to toggle)
 	if OS.is_debug_build():
 		add_child(DebugOverlay.new())
 
-	# Start with a test level (remove this later)
-	call_deferred("_spawn_test_scene")
+	GameState.current_state = GameState.State.MENU
 
 
 func _initialize_ecs() -> void:
 	ECS.register_system(InputSystem.new())
 	ECS.register_system(AISystem.new())
+	ECS.register_system(BossSystem.new())
 	ECS.register_system(ParrySystem.new())
 	ECS.register_system(JumpSystem.new())
 	ECS.register_system(DodgeSystem.new())
@@ -171,6 +178,12 @@ func _connect_signals() -> void:
 		combat_system.entity_damaged.connect(_on_entity_damaged)
 		combat_system.entity_died.connect(_on_entity_died)
 		combat_system.parried.connect(_on_parried)
+		# SFX
+		combat_system.attack_started.connect(_on_sfx_attack_started)
+		combat_system.attack_hit.connect(_on_sfx_attack_hit)
+		combat_system.parried.connect(_on_sfx_parried)
+		combat_system.blocked.connect(_on_sfx_blocked)
+		combat_system.entity_died.connect(_on_sfx_entity_died)
 
 	# Connect momentum system signals
 	var momentum_system: MomentumSystem = ECS.get_system(MomentumSystem)
@@ -183,13 +196,50 @@ func _connect_signals() -> void:
 	if echo_system:
 		echo_system.echo_activated.connect(_on_echo_activated)
 		echo_system.echo_ended.connect(_on_echo_ended)
+		echo_system.echo_activated.connect(_on_sfx_echo)
+
+	# Connect SFX for jump / dodge / projectile systems
+	var jump_system = ECS.get_system(JumpSystem)
+	if jump_system:
+		jump_system.jumped.connect(_on_sfx_jumped)
+	var dodge_system = ECS.get_system(DodgeSystem)
+	if dodge_system:
+		dodge_system.dodge_started.connect(_on_sfx_dodge)
+	var projectile_system = ECS.get_system(ProjectileSystem)
+	if projectile_system:
+		projectile_system.projectile_hit.connect(_on_sfx_projectile_hit)
 
 
-func _spawn_test_scene() -> void:
+func _start_level() -> void:
+	GameState.begin_run()
+	_arenas_activated.clear()
+	_arena_enemies.clear()
+	_current_arena = -1
+	_won = false
 	_player_spawn = LevelOne.SPAWN
 	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
 	_build_level()
+
+
+func _clear_level() -> void:
+	ECS.clear_all()
+	for c in entities_node.get_children():
+		c.queue_free()
+	var world = game.get_node_or_null("World")
+	if world:
+		for c in world.get_children():
+			c.queue_free()
+	var win = get_node_or_null("WinLayer")
+	if win:
+		win.queue_free()
+	_player_entity_id = -1
+
+
+func _restart_level() -> void:
+	_clear_level()
+	await get_tree().process_frame
+	_start_level()
 
 
 func _build_level() -> void:
@@ -330,6 +380,34 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	return entity_id
 
 
+func _spawn_boss(position: Vector2) -> int:
+	var node = CharacterBody2D.new()
+	node.name = "CrimsonRonin"
+	node.position = position
+	node.scale = Vector2(1.8, 1.8)
+	entities_node.add_child(node)
+	var cs = CollisionShape2D.new()
+	var shape = RectangleShape2D.new(); shape.size = Vector2(32, 64)
+	cs.shape = shape; node.add_child(cs)
+	var id = ECS.create_entity_with_node(node)
+	ECS.add_component(id, "position", Components.position(position.x, position.y))
+	ECS.add_component(id, "velocity", Components.velocity())
+	ECS.add_component(id, "collision", Components.collision(32, 64))
+	var spr = Components.sprite(); spr.frame_set = "enemy"; spr.modulate = Color(1.0, 0.25, 0.25)
+	ECS.add_component(id, "sprite", spr)
+	ECS.add_component(id, "health", Components.health(320))
+	ECS.add_component(id, "weapon", Components.weapon(22, 0.5))
+	ECS.add_component(id, "platformer", Components.platformer())
+	var en = Components.enemy("crimson_ronin"); en.facing = -1
+	ECS.add_component(id, "enemy", en)
+	ECS.add_component(id, "boss", Components.boss("Crimson Ronin"))
+	ECS.add_component(id, "tag_enemy", Components.tag_enemy())
+	GameEvents.ui_show_message.emit("Crimson Ronin", 2.5)
+	GameEvents.boss_spawned.emit("Crimson Ronin")
+	GameEvents.boss_health.emit(320, 320)
+	return id
+
+
 func _activate_arena(index: int) -> void:
 	_arenas_activated.append(index)
 	_current_arena = index
@@ -337,7 +415,10 @@ func _activate_arena(index: int) -> void:
 	_player_spawn = arena.checkpoint
 	var ids: Array = []
 	for spec in arena.enemies:
-		ids.append(_spawn_enemy(spec[1], spec[0]))
+		if spec[0] == "crimson_ronin":
+			ids.append(_spawn_boss(spec[1]))
+		else:
+			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
 
 
@@ -353,7 +434,10 @@ func _restore_arena(index: int) -> void:
 	var arena = LevelOne.arenas()[index]
 	var ids: Array = []
 	for spec in arena.enemies:
-		ids.append(_spawn_enemy(spec[1], spec[0]))
+		if spec[0] == "crimson_ronin":
+			ids.append(_spawn_boss(spec[1]))
+		else:
+			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
 
 
@@ -405,11 +489,23 @@ func _add_platform(position: Vector2, size: Vector2) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause"):
-		if GameState.current_state == GameState.State.PLAYING:
-			GameState.pause_game()
-		elif GameState.current_state == GameState.State.PAUSED:
-			GameState.resume_game()
+	match GameState.current_state:
+		GameState.State.MENU:
+			if event.is_action_pressed("ui_accept") or event.is_action_pressed("jump"):
+				_start_level()
+		GameState.State.PLAYING:
+			if event.is_action_pressed("pause"):
+				GameState.pause_game()
+		GameState.State.PAUSED:
+			if event.is_action_pressed("pause"):
+				GameState.resume_game()
+			elif event.is_action_pressed("restart"):
+				GameState.resume_game()
+				_restart_level()
+		GameState.State.VICTORY, GameState.State.GAME_OVER:
+			if event.is_action_pressed("restart"):
+				get_tree().paused = false
+				_restart_level()
 
 
 func _process(delta: float) -> void:
@@ -418,23 +514,31 @@ func _process(delta: float) -> void:
 	if _player_entity_id < 0:
 		return
 
-	# Update camera to follow player
-	var player_pos = ECS.get_component(_player_entity_id, "position")
-	if player_pos:
-		camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
+	if GameState.current_state == GameState.State.PLAYING:
+		# Update camera to follow player
+		var player_pos = ECS.get_component(_player_entity_id, "position")
+		if player_pos:
+			camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
 
-		var px = ECS.get_component(_player_entity_id, "position").x
-		var idx = LevelOne.arena_to_activate(px, _arenas_activated)
-		if idx >= 0:
-			_activate_arena(idx)
+			var bosses = ECS.get_entities_with("boss")
+			if bosses.size() > 0:
+				var bh = ECS.get_component(bosses[0], "health")
+				if bh:
+					GameEvents.boss_health.emit(bh.current, bh.max)
 
-		var final_idx = LevelOne.arenas().size() - 1
-		var final_cleared = _arenas_activated.has(final_idx) \
-			and _arena_enemies.has(final_idx) \
-			and _living_count(_arena_enemies[final_idx]) == 0
-		if not _won and LevelOne.is_level_won(px, final_cleared):
-			_won = true
-			_show_victory()
+			var px = ECS.get_component(_player_entity_id, "position").x
+			var idx = LevelOne.arena_to_activate(px, _arenas_activated)
+			if idx >= 0:
+				_activate_arena(idx)
+
+			var final_idx = LevelOne.arenas().size() - 1
+			var final_cleared = _arenas_activated.has(final_idx) \
+				and _arena_enemies.has(final_idx) \
+				and _living_count(_arena_enemies[final_idx]) == 0
+			if not _won and LevelOne.is_level_won(px, final_cleared):
+				_won = true
+				GameState.win_run()
+				get_tree().paused = true
 
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
@@ -543,6 +647,11 @@ func _process_dying(delta: float) -> void:
 
 func _finish_player_death(eid: int) -> void:
 	ECS.remove_component(eid, "dying")
+	if GameState.lose_life():
+		# Defeated: freeze the field under the DEFEAT overlay.
+		get_tree().paused = true
+		return
+	# Otherwise respawn at checkpoint (existing logic):
 	var health = ECS.get_component(eid, "health")
 	var pos = ECS.get_component(eid, "position")
 	_respawn_player_state(health, pos, _player_spawn)
@@ -565,6 +674,12 @@ func _finish_enemy_death(eid: int) -> void:
 	# Give XP
 	GameState.add_xp(25)
 	GameState.add_currency("neon_yen", 10)
+
+	if ECS.has_component(eid, "boss") and not _won:
+		_won = true
+		GameEvents.boss_defeated.emit()
+		GameState.win_run()
+		get_tree().paused = true
 
 	# Destroy enemy (this also removes its dying component)
 	var node = ECS.get_entity_node(eid)
@@ -601,3 +716,27 @@ func _on_echo_ended(_echo_entity_id: int) -> void:
 
 func _on_parried(_defender_id: int, _attacker_id: int) -> void:
 	print("Parry!")
+
+
+# =============================================================================
+# SFX HANDLERS
+# =============================================================================
+
+func _on_sfx_attack_started(_eid: int, _atype: String) -> void:
+	if _audio: _audio.play("slash")
+func _on_sfx_attack_hit(_aid: int, _tid: int, _dmg: int) -> void:
+	if _audio: _audio.play("hit")
+func _on_sfx_parried(_d: int, _a: int) -> void:
+	if _audio: _audio.play("parry")
+func _on_sfx_blocked(_d: int, _a: int) -> void:
+	if _audio: _audio.play("block")
+func _on_sfx_entity_died(_eid: int) -> void:
+	if _audio: _audio.play("death")
+func _on_sfx_jumped(_eid: int) -> void:
+	if _audio: _audio.play("jump")
+func _on_sfx_dodge(_eid: int) -> void:
+	if _audio: _audio.play("dodge")
+func _on_sfx_echo(_eid: int, _echo: int) -> void:
+	if _audio: _audio.play("echo")
+func _on_sfx_projectile_hit(_pid: int, _tid: int) -> void:
+	if _audio: _audio.play("hit_light")

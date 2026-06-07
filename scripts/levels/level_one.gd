@@ -25,7 +25,7 @@ static func arenas() -> Array:
 		{"trigger_x": 2500.0, "checkpoint": Vector2(2450, 540), "enemies": [
 			["cyber_ashigaru", Vector2(2750, 430)], ["ronin_drone", Vector2(2950, 540)]]},
 		{"trigger_x": 3300.0, "checkpoint": Vector2(3250, 540), "enemies": [
-			["elite_oni", Vector2(3650, 540)]]},
+			["crimson_ronin", Vector2(3650, 540)]]},
 	]
 
 ## Enemy roster for a given arena index, or empty if out of range.

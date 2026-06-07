@@ -49,6 +49,7 @@ func _process_ability_input(input: Dictionary) -> void:
 	input.dash_pressed = Input.is_action_just_pressed("dash")
 	# Parry
 	input.parry_pressed = Input.is_action_just_pressed("parry")
+	input.parry_held = Input.is_action_pressed("parry")
 
 
 func _get_attack_direction(input: Dictionary) -> Vector2:
