@@ -20,6 +20,13 @@ extends Control
 @onready var combo_counter: Label = %ComboCounter
 @onready var damage_numbers: Node2D = %DamageNumbers
 
+# Boss bar (built in code, top-center, hidden unless a boss is active)
+var _boss_container: Control
+var _boss_bar: ColorRect
+var _boss_label: Label
+var _boss_bar_width: float = 600.0
+var _boss_max_hp: int = 1
+
 # =============================================================================
 # STATE
 # =============================================================================
@@ -58,7 +65,12 @@ const COLOR_ECHO_READY = Color(0.0, 1.0, 1.0, 1.0)
 const COLOR_ECHO_COOLDOWN = Color(0.3, 0.3, 0.4, 1.0)
 
 
+const COLOR_BOSS_BG = Color(0.12, 0.04, 0.06, 0.85)
+const COLOR_BOSS_FILL = Color(1.0, 0.2, 0.25, 1.0)
+
+
 func _ready() -> void:
+	_build_boss_bar()
 	_connect_signals()
 	_initialize_bars()
 
@@ -86,6 +98,10 @@ func _connect_signals() -> void:
 	GameEvents.echo_activated.connect(_on_echo_activated)
 	GameEvents.echo_ready.connect(_on_echo_ready)
 	GameEvents.echo_not_ready.connect(_on_echo_not_ready)
+
+	GameEvents.boss_spawned.connect(_on_boss_spawned)
+	GameEvents.boss_health.connect(_on_boss_health)
+	GameEvents.boss_defeated.connect(_on_boss_defeated)
 
 	# Connect to combat system for combos
 	if ECS:
@@ -294,6 +310,83 @@ func _update_combo_timer(delta: float) -> void:
 		if _combo_timer <= 0:
 			combo_counter.visible = false
 			_combo_count = 0
+
+
+# =============================================================================
+# BOSS BAR
+# =============================================================================
+
+func _build_boss_bar() -> void:
+	_boss_container = Control.new()
+	_boss_container.name = "BossContainer"
+	# Top-center anchor
+	_boss_container.anchor_left = 0.5
+	_boss_container.anchor_right = 0.5
+	_boss_container.offset_left = -_boss_bar_width / 2.0
+	_boss_container.offset_right = _boss_bar_width / 2.0
+	_boss_container.offset_top = 24.0
+	_boss_container.offset_bottom = 76.0
+	_boss_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_container.visible = false
+	add_child(_boss_container)
+
+	var label := Label.new()
+	label.name = "BossLabel"
+	label.anchor_right = 1.0
+	label.offset_bottom = 22.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_font_size_override("font_size", 18)
+	label.text = "Boss"
+	_boss_container.add_child(label)
+	_boss_label = label
+
+	var bg := ColorRect.new()
+	bg.name = "BossBarBG"
+	bg.anchor_right = 1.0
+	bg.offset_top = 24.0
+	bg.offset_bottom = 48.0
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.color = COLOR_BOSS_BG
+	_boss_container.add_child(bg)
+
+	var fill := ColorRect.new()
+	fill.name = "BossBar"
+	fill.offset_top = 24.0
+	fill.offset_bottom = 48.0
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fill.color = COLOR_BOSS_FILL
+	fill.size.x = _boss_bar_width
+	_boss_container.add_child(fill)
+	_boss_bar = fill
+
+
+func _on_boss_spawned(boss_name: String) -> void:
+	if not _boss_container:
+		return
+	if _boss_label:
+		_boss_label.text = boss_name
+	_boss_max_hp = 1
+	if _boss_bar:
+		_boss_bar.size.x = _boss_bar_width
+	_boss_container.visible = true
+
+
+func _on_boss_health(current: int, max_hp: int) -> void:
+	if not _boss_bar:
+		return
+	_boss_max_hp = max(max_hp, 1)
+	var percent: float = clampf(float(current) / float(_boss_max_hp), 0.0, 1.0)
+	_boss_bar.size.x = _boss_bar_width * percent
+
+
+func _on_boss_defeated() -> void:
+	if _boss_container:
+		_boss_container.visible = false
 
 
 # =============================================================================

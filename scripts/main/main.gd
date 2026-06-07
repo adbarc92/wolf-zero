@@ -403,6 +403,8 @@ func _spawn_boss(position: Vector2) -> int:
 	ECS.add_component(id, "boss", Components.boss("Crimson Ronin"))
 	ECS.add_component(id, "tag_enemy", Components.tag_enemy())
 	GameEvents.ui_show_message.emit("Crimson Ronin", 2.5)
+	GameEvents.boss_spawned.emit("Crimson Ronin")
+	GameEvents.boss_health.emit(320, 320)
 	return id
 
 
@@ -517,6 +519,12 @@ func _process(delta: float) -> void:
 		var player_pos = ECS.get_component(_player_entity_id, "position")
 		if player_pos:
 			camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
+
+			var bosses = ECS.get_entities_with("boss")
+			if bosses.size() > 0:
+				var bh = ECS.get_component(bosses[0], "health")
+				if bh:
+					GameEvents.boss_health.emit(bh.current, bh.max)
 
 			var px = ECS.get_component(_player_entity_id, "position").x
 			var idx = LevelOne.arena_to_activate(px, _arenas_activated)
@@ -669,6 +677,7 @@ func _finish_enemy_death(eid: int) -> void:
 
 	if ECS.has_component(eid, "boss") and not _won:
 		_won = true
+		GameEvents.boss_defeated.emit()
 		GameState.win_run()
 		get_tree().paused = true
 
