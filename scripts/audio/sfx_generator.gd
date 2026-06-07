@@ -67,3 +67,36 @@ static func _chime(dur: float, f0: float, amp: float) -> Array:
 		var s := sin(TAU * f0 * t) * 0.6 + sin(TAU * f0 * 2.0 * t) * 0.3 + sin(TAU * f0 * 3.0 * t) * 0.1
 		out[i] = s * amp * _env(i, n, 0.005)
 	return out
+
+## A short looping synth-koto bed (procedural, low amplitude).
+static func music() -> AudioStreamWAV:
+	var total := int(8.0 * RATE)
+	var out := []
+	out.resize(total)
+	for i in range(total):
+		out[i] = 0.0
+	# Minor-pentatonic semitone offsets from a base; A3 = 220 Hz base.
+	var base := 220.0
+	var scale := [0, 3, 5, 7, 10, 12]
+	var note_dur := 0.4
+	var step := int(0.4 * RATE)  # ~2.5 notes/sec
+	var idx := 0
+	var pos := 0
+	while pos < total:
+		var semis: int = scale[idx % scale.size()]
+		var freq := base * pow(2.0, semis / 12.0)
+		var note := _chime(note_dur, freq, 0.22)
+		for j in range(note.size()):
+			var p := pos + j
+			if p < total:
+				out[p] += note[j]
+		idx += 1
+		pos += step
+	# Soft clip
+	for i in range(total):
+		out[i] = clampf(out[i], -0.9, 0.9)
+	var s := from_samples(out, RATE)
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	s.loop_begin = 0
+	s.loop_end = total - 1
+	return s
