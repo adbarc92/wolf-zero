@@ -13,6 +13,7 @@ enum State {
 	PAUSED,
 	CUTSCENE,
 	GAME_OVER,
+	VICTORY,
 	LOADING,
 }
 
@@ -38,6 +39,9 @@ var current_mission: int = -1
 
 ## Current checkpoint in mission
 var current_checkpoint: int = 0
+
+const MAX_LIVES := 3
+var lives: int = 3
 
 ## Player entity ID (set by player spawner)
 var player_entity_id: int = -1
@@ -251,6 +255,23 @@ func is_mission_unlocked(mission_id: int) -> bool:
 # =============================================================================
 # GAME FLOW
 # =============================================================================
+
+func begin_run() -> void:
+	lives = MAX_LIVES
+	current_checkpoint = 0
+	current_state = State.PLAYING
+
+## Consume a life on death. Returns true if the run is now over (defeat).
+func lose_life() -> bool:
+	lives = max(0, lives - 1)
+	if lives <= 0:
+		current_state = State.GAME_OVER
+		return true
+	return false
+
+func win_run() -> void:
+	current_state = State.VICTORY
+
 
 func start_mission(mission_id: int) -> void:
 	current_mission = mission_id
