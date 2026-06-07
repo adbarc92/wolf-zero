@@ -9,6 +9,11 @@ signal combo_increased(entity_id: int, combo_count: int)
 signal entity_damaged(entity_id: int, damage: int, current_hp: int)
 signal entity_died(entity_id: int)
 signal parried(defender_id: int, attacker_id: int)
+signal blocked(defender_id: int, attacker_id: int)
+
+
+static func block_damage(raw: int, mult: float) -> int:
+	return max(1, int(raw * mult))
 
 
 func _get_required_components() -> Array[String]:
@@ -207,6 +212,10 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 		if atk_ai:
 			atk_ai.state = "stagger"
 			atk_ai.stagger_timer = 1.0
+		var atk_boss = get_component(attacker_id, "boss")
+		if atk_boss:
+			atk_boss.staggered = true
+			atk_boss.stagger_timer = 1.4
 		var mom = get_component(target_id, "momentum")
 		var mom_sys = ecs.get_system(MomentumSystem)
 		if mom and mom_sys:
@@ -215,6 +224,23 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 		if VFXManager:
 			VFXManager.screen_shake(0.5, 0.15)
 		weapon.hitbox_active = false  # consume the attack
+		return
+
+	# Block: a blocking target takes chip damage, no knockback/stagger, no reflect.
+	var target_block = get_component(target_id, "parry")
+	if target_block and target_block.is_blocking:
+		var th = get_component(target_id, "health")
+		if th and not th.invincible:
+			var dmg_blocked := block_damage(weapon.damage, target_block.block_damage_mult)
+			th.current -= dmg_blocked
+			th.hurt_timer = 0.12
+			th.invincible = true
+			th.invincibility_timer = th.invincibility_duration
+			entity_damaged.emit(target_id, dmg_blocked, th.current)
+			if th.current <= 0:
+				entity_died.emit(target_id)
+		blocked.emit(target_id, attacker_id)
+		weapon.hitbox_active = false
 		return
 
 	var target_health = get_component(target_id, "health")

@@ -81,6 +81,10 @@ signal ui_update_health(current: int, max_hp: int)
 signal ui_update_momentum(current: float, max_val: float)
 signal ui_update_echo_cooldown(remaining: float, total: float)
 
+signal boss_spawned(boss_name: String)
+signal boss_health(current: int, max_hp: int)
+signal boss_defeated()
+
 # =============================================================================
 # LEVEL EVENTS
 # =============================================================================

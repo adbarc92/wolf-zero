@@ -67,6 +67,9 @@ func process(delta: float) -> void:
 			var move_scale := 1.0
 			if input.crouch_pressed and collision and collision.on_ground:
 				move_scale = 0.4
+			var pc = get_component(entity_id, "parry")
+			if pc and pc.get("is_blocking", false) and collision and collision.on_ground:
+				move_scale = 0.15
 			_apply_input_movement(vel, input, delta, move_scale)
 
 		# Apply gravity

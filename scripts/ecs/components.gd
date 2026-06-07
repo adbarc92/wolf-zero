@@ -169,6 +169,7 @@ static func input_state() -> Dictionary:
 		"dodge_pressed": false,
 		"dash_pressed": false,
 		"parry_pressed": false,
+		"parry_held": false,
 		"echo_pressed": false,
 		"facing": 1,  # 1 right, -1 left
 	}
@@ -214,6 +215,8 @@ static func parry() -> Dictionary:
 		"parry_window": 0.2,
 		"cooldown": 0.0,
 		"cooldown_duration": 0.5,
+		"is_blocking": false,
+		"block_damage_mult": 0.3,
 	}
 
 
@@ -252,11 +255,26 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 	}
 
 
+## Boss controller state.
+static func boss(boss_name: String = "Crimson Ronin") -> Dictionary:
+	return {
+		"name": boss_name,
+		"phase": 1,
+		"state": "intro",
+		"state_timer": 1.2,
+		"pattern": "",
+		"staggered": false,
+		"stagger_timer": 0.0,
+		"facing": -1,
+		"detection_range": 900.0,
+	}
+
+
 ## Enemy-specific data
 static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 	return {
 		"type": enemy_type,
-		"telegraph_time": 0.5,  # Warning before attack
+		"telegraph_time": 0.8,  # Warning before attack
 		"telegraph_timer": 0.0,
 		"is_telegraphing": false,
 		"has_armor": false,
