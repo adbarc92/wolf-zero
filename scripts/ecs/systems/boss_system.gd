@@ -15,7 +15,7 @@ static func phase_for_hp(current: int, max_hp: int) -> int:
 
 static func patterns_for_phase(phase: int) -> Array:
 	if phase >= 2:
-		return ["slash", "lunge", "combo"]
+		return ["slash", "lunge", "combo", "perilous"]
 	return ["slash"]
 
 static func pattern_spec(name: String) -> Dictionary:
@@ -24,6 +24,8 @@ static func pattern_spec(name: String) -> Dictionary:
 			return {"telegraph": 0.6, "active": 0.3, "recover": 0.8, "damage": 26, "lunge": true}
 		"combo":
 			return {"telegraph": 0.55, "active": 0.5, "recover": 0.6, "damage": 18, "lunge": false}
+		"perilous":
+			return {"telegraph": 0.7, "active": 0.3, "recover": 0.9, "damage": 30, "lunge": true, "unblockable": true}
 		_:
 			return {"telegraph": 0.75, "active": 0.2, "recover": 0.85, "damage": 22, "lunge": false}
 
@@ -58,8 +60,20 @@ func process(delta: float) -> void:
 		if en:
 			en.facing = boss.facing
 
+		if not boss.has("base_tint"):
+			var s0 = get_component(entity_id, "sprite")
+			boss["base_tint"] = (s0.modulate if s0 else Color(1, 1, 1, 1))
+
+		var spr = get_component(entity_id, "sprite")
+		if boss.state == "telegraph" and boss.pattern == "perilous":
+			if spr: spr.modulate = Color(1.6, 1.4, 0.4)
+		else:
+			if spr: spr.modulate = boss.base_tint
+
 		if boss.staggered:
-			if weapon: weapon.hitbox_active = false
+			if weapon:
+				weapon.hitbox_active = false
+				weapon.unblockable = false
 			if vel: vel.x = 0.0
 			boss.stagger_timer -= delta
 			if boss.stagger_timer <= 0.0:
@@ -71,7 +85,9 @@ func process(delta: float) -> void:
 		boss.state_timer -= delta
 		match boss.state:
 			"intro", "idle", "recover":
-				if weapon: weapon.hitbox_active = false
+				if weapon:
+					weapon.hitbox_active = false
+					weapon.unblockable = false
 				if vel: vel.x = 0.0
 				if boss.state_timer <= 0.0:
 					_tick += 1
@@ -90,6 +106,7 @@ func process(delta: float) -> void:
 						weapon.is_attacking = true
 						weapon.hitbox_active = true
 						weapon.attack_type = "enemy"
+						weapon.unblockable = spec.get("unblockable", false)
 					if spec.get("lunge", false) and vel:
 						vel.x = boss.facing * 520.0
 			"attack":
@@ -97,5 +114,6 @@ func process(delta: float) -> void:
 					if weapon:
 						weapon.is_attacking = false
 						weapon.hitbox_active = false
+						weapon.unblockable = false
 					boss.state = "recover"
 					boss.state_timer = pattern_spec(boss.pattern).recover
