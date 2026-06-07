@@ -212,6 +212,7 @@ func _connect_signals() -> void:
 
 func _start_level() -> void:
 	GameState.begin_run()
+	GameEvents.lives_changed.emit(GameState.lives)
 	_arenas_activated.clear()
 	_arena_enemies.clear()
 	_current_arena = -1
@@ -647,7 +648,9 @@ func _process_dying(delta: float) -> void:
 
 func _finish_player_death(eid: int) -> void:
 	ECS.remove_component(eid, "dying")
-	if GameState.lose_life():
+	var _run_over := GameState.lose_life()
+	GameEvents.lives_changed.emit(GameState.lives)
+	if _run_over:
 		# Defeated: freeze the field under the DEFEAT overlay.
 		get_tree().paused = true
 		return
