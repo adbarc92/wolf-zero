@@ -175,7 +175,7 @@ func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: 
 				var from = Vector2(pos.x + dir * 30.0, pos.y)
 				var dmg = weapon.damage if weapon else 8
 				proj_sys.spawn(from, dir, "enemy", dmg)
-			ai.attack_cooldown = 1.2
+			ai.attack_cooldown = 1.7
 			ai.state = "chase"
 			if enemy:
 				enemy.is_telegraphing = false
@@ -186,7 +186,7 @@ func _process_attack(entity_id: int, ai: Dictionary, enemy: Dictionary, _delta: 
 		weapon.attack_type = "enemy"
 		weapon.attack_timer = weapon.attack_speed  # CombatSystem timers self-close the window
 
-	ai.attack_cooldown = 1.0  # time between attacks
+	ai.attack_cooldown = 1.5  # time between attacks
 	ai.state = "chase"
 
 	if enemy:

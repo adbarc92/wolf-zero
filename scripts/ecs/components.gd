@@ -259,7 +259,7 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 	return {
 		"type": enemy_type,
-		"telegraph_time": 0.5,  # Warning before attack
+		"telegraph_time": 0.8,  # Warning before attack
 		"telegraph_timer": 0.0,
 		"is_telegraphing": false,
 		"has_armor": false,

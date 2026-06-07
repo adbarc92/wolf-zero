@@ -23,16 +23,16 @@ var _audio: AudioManager
 static func archetype(kind: String) -> Dictionary:
 	match kind:
 		"cyber_ashigaru":
-			return {"health": 30, "damage": 8, "speed": 260.0, "armor_hits": 0,
+			return {"health": 30, "damage": 14, "speed": 260.0, "armor_hits": 0,
 				"is_ranged": true, "detection": 420.0, "attack_range": 320.0, "tint": Color(0.7, 1.0, 0.8)}
 		"oni_mech":
-			return {"health": 120, "damage": 20, "speed": 140.0, "armor_hits": 3,
+			return {"health": 120, "damage": 30, "speed": 140.0, "armor_hits": 3,
 				"is_ranged": false, "detection": 300.0, "attack_range": 60.0, "tint": Color(1.0, 0.6, 0.5)}
 		"elite_oni":
-			return {"health": 200, "damage": 26, "speed": 170.0, "armor_hits": 4,
+			return {"health": 200, "damage": 38, "speed": 170.0, "armor_hits": 4,
 				"is_ranged": false, "detection": 380.0, "attack_range": 64.0, "tint": Color(1.0, 0.3, 0.3)}
 		_:
-			return {"health": 50, "damage": 10, "speed": 200.0, "armor_hits": 0,
+			return {"health": 50, "damage": 18, "speed": 200.0, "armor_hits": 0,
 				"is_ranged": false, "detection": 300.0, "attack_range": 50.0, "tint": Color.WHITE}
 
 
