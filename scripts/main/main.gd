@@ -393,11 +393,15 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 	return entity_id
 
 
-func _spawn_boss(position: Vector2) -> int:
+func _spawn_boss(position: Vector2, kind: String = "crimson_ronin") -> int:
+	var cfg = {
+		"crimson_ronin": {"name": "Crimson Ronin", "hp": 320, "tint": Color(1.0, 0.25, 0.25), "scale": 1.8, "dmg": 22, "final": false},
+		"oni_warlord":   {"name": "Oni Warlord",   "hp": 480, "tint": Color(0.55, 0.4, 0.7), "scale": 2.3, "dmg": 28, "final": true},
+	}.get(kind, {"name": "Boss", "hp": 320, "tint": Color(1,1,1,1), "scale": 1.8, "dmg": 22, "final": true})
 	var node = CharacterBody2D.new()
-	node.name = "CrimsonRonin"
+	node.name = cfg.name.replace(" ", "")
 	node.position = position
-	node.scale = Vector2(1.8, 1.8)
+	node.scale = Vector2(cfg.scale, cfg.scale)
 	entities_node.add_child(node)
 	var cs = CollisionShape2D.new()
 	var shape = RectangleShape2D.new(); shape.size = Vector2(32, 64)
@@ -406,18 +410,19 @@ func _spawn_boss(position: Vector2) -> int:
 	ECS.add_component(id, "position", Components.position(position.x, position.y))
 	ECS.add_component(id, "velocity", Components.velocity())
 	ECS.add_component(id, "collision", Components.collision(32, 64))
-	var spr = Components.sprite(); spr.frame_set = "enemy"; spr.modulate = Color(1.0, 0.25, 0.25)
+	var spr = Components.sprite(); spr.frame_set = "enemy"; spr.modulate = cfg.tint
 	ECS.add_component(id, "sprite", spr)
-	ECS.add_component(id, "health", Components.health(320))
-	ECS.add_component(id, "weapon", Components.weapon(22, 0.5))
+	ECS.add_component(id, "health", Components.health(cfg.hp))
+	ECS.add_component(id, "weapon", Components.weapon(cfg.dmg, 0.5))
 	ECS.add_component(id, "platformer", Components.platformer())
-	var en = Components.enemy("crimson_ronin"); en.facing = -1
+	var en = Components.enemy(kind); en.facing = -1
 	ECS.add_component(id, "enemy", en)
-	ECS.add_component(id, "boss", Components.boss("Crimson Ronin"))
+	ECS.add_component(id, "boss", Components.boss(cfg.name))
 	ECS.add_component(id, "tag_enemy", Components.tag_enemy())
-	GameEvents.ui_show_message.emit("Crimson Ronin", 2.5)
-	GameEvents.boss_spawned.emit("Crimson Ronin")
-	GameEvents.boss_health.emit(320, 320)
+	var bc = ECS.get_component(id, "boss"); bc.kind = kind; bc.is_final = cfg.final
+	GameEvents.ui_show_message.emit(cfg.name, 2.5)
+	GameEvents.boss_spawned.emit(cfg.name)
+	GameEvents.boss_health.emit(cfg.hp, cfg.hp)
 	return id
 
 
@@ -428,8 +433,8 @@ func _activate_arena(index: int) -> void:
 	_player_spawn = arena.checkpoint
 	var ids: Array = []
 	for spec in arena.enemies:
-		if spec[0] == "crimson_ronin":
-			ids.append(_spawn_boss(spec[1]))
+		if spec[0] == "crimson_ronin" or spec[0] == "oni_warlord":
+			ids.append(_spawn_boss(spec[1], spec[0]))
 		else:
 			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
@@ -447,8 +452,8 @@ func _restore_arena(index: int) -> void:
 	var arena = LevelOne.arenas()[index]
 	var ids: Array = []
 	for spec in arena.enemies:
-		if spec[0] == "crimson_ronin":
-			ids.append(_spawn_boss(spec[1]))
+		if spec[0] == "crimson_ronin" or spec[0] == "oni_warlord":
+			ids.append(_spawn_boss(spec[1], spec[0]))
 		else:
 			ids.append(_spawn_enemy(spec[1], spec[0]))
 	_arena_enemies[index] = ids
@@ -690,7 +695,8 @@ func _finish_enemy_death(eid: int) -> void:
 	GameState.add_xp(25)
 	GameState.add_currency("neon_yen", 10)
 
-	if ECS.has_component(eid, "boss") and not _won:
+	var b = ECS.get_component(eid, "boss")
+	if b and b.get("is_final", true) and not _won:
 		_won = true
 		GameEvents.boss_defeated.emit()
 		GameState.win_run()

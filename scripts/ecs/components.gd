@@ -89,6 +89,7 @@ static func weapon(damage: int = 10, attack_speed: float = 0.3) -> Dictionary:
 		"is_attacking": false,
 		"attack_type": "none",  # "light", "heavy_up", "heavy_forward", "heavy_down"
 		"hitbox_active": false,
+		"unblockable": false,
 	}
 
 
@@ -259,6 +260,8 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 static func boss(boss_name: String = "Crimson Ronin") -> Dictionary:
 	return {
 		"name": boss_name,
+		"is_final": true,
+		"kind": "crimson_ronin",
 		"phase": 1,
 		"state": "intro",
 		"state_timer": 1.2,

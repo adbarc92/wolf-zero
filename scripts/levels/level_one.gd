@@ -3,14 +3,14 @@ extends RefCounted
 ## Static data + pure flow helpers for the vertical-slice level.
 
 const SPAWN := Vector2(200, 540)
-const GOAL_X := 3950.0
+const GOAL_X := 4950.0
 const FLOOR_Y := 600.0
-const EXTENT_X := 4200.0
+const EXTENT_X := 5200.0
 
 ## Solid geometry as rects [Vector2 center, Vector2 size].
 static func platforms() -> Array:
 	return [
-		[Vector2(2100, FLOOR_Y + 16), Vector2(EXTENT_X, 32)],
+		[Vector2(EXTENT_X / 2.0, FLOOR_Y + 16), Vector2(EXTENT_X, 32)],
 		[Vector2(700, 470), Vector2(180, 20)],
 		[Vector2(1050, 400), Vector2(160, 20)],
 		[Vector2(1700, 430), Vector2(40, 320)],
@@ -27,6 +27,8 @@ static func arenas() -> Array:
 			["shinobi_ghost", Vector2(2850, 540)], ["tech_priest", Vector2(2600, 540)]]},
 		{"trigger_x": 3300.0, "checkpoint": Vector2(3250, 540), "enemies": [
 			["crimson_ronin", Vector2(3650, 540)]]},
+		{"trigger_x": 4050.0, "checkpoint": Vector2(4000, 540), "enemies": [
+			["oni_warlord", Vector2(4450, 540)]]},
 	]
 
 ## Enemy roster for a given arena index, or empty if out of range.
