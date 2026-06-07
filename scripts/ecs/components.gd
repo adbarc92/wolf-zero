@@ -255,6 +255,21 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 	}
 
 
+## Boss controller state.
+static func boss(boss_name: String = "Crimson Ronin") -> Dictionary:
+	return {
+		"name": boss_name,
+		"phase": 1,
+		"state": "intro",
+		"state_timer": 1.2,
+		"pattern": "",
+		"staggered": false,
+		"stagger_timer": 0.0,
+		"facing": -1,
+		"detection_range": 900.0,
+	}
+
+
 ## Enemy-specific data
 static func enemy(enemy_type: String = "ronin_drone") -> Dictionary:
 	return {

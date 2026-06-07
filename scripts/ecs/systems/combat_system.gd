@@ -212,6 +212,10 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 		if atk_ai:
 			atk_ai.state = "stagger"
 			atk_ai.stagger_timer = 1.0
+		var atk_boss = get_component(attacker_id, "boss")
+		if atk_boss:
+			atk_boss.staggered = true
+			atk_boss.stagger_timer = 1.4
 		var mom = get_component(target_id, "momentum")
 		var mom_sys = ecs.get_system(MomentumSystem)
 		if mom and mom_sys:
