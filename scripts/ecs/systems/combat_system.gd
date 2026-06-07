@@ -199,7 +199,7 @@ func _check_hit(attacker_id: int, target_id: int, facing: int) -> bool:
 func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void:
 	# Parry: a parrying target negates the hit, reflects damage, and staggers the attacker.
 	var target_parry = get_component(target_id, "parry")
-	if target_parry and target_parry.is_parrying:
+	if target_parry and target_parry.is_parrying and not weapon.get("unblockable", false):
 		target_parry.is_parrying = false
 		var atk_health = get_component(attacker_id, "health")
 		if atk_health:
@@ -228,7 +228,7 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 
 	# Block: a blocking target takes chip damage, no knockback/stagger, no reflect.
 	var target_block = get_component(target_id, "parry")
-	if target_block and target_block.is_blocking:
+	if target_block and target_block.is_blocking and not weapon.get("unblockable", false):
 		var th = get_component(target_id, "health")
 		if th and not th.invincible:
 			var dmg_blocked := block_damage(weapon.damage, target_block.block_damage_mult)

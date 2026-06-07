@@ -89,6 +89,7 @@ static func weapon(damage: int = 10, attack_speed: float = 0.3) -> Dictionary:
 		"is_attacking": false,
 		"attack_type": "none",  # "light", "heavy_up", "heavy_forward", "heavy_down"
 		"hitbox_active": false,
+		"unblockable": false,
 	}
 
 
