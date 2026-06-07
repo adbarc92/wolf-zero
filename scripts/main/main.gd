@@ -52,6 +52,11 @@ func _ready() -> void:
 	if OS.is_debug_build():
 		add_child(DebugOverlay.new())
 
+	var touch := TouchControls.new()
+	if OS.is_debug_build():
+		touch.force_visible = true
+	add_child(touch)
+
 	GameState.current_state = GameState.State.MENU
 
 
