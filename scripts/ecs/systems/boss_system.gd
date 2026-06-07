@@ -29,6 +29,11 @@ static func pattern_spec(name: String) -> Dictionary:
 		_:
 			return {"telegraph": 0.75, "active": 0.2, "recover": 0.85, "damage": 22, "lunge": false}
 
+static func patterns_for(kind: String, phase: int) -> Array:
+	if kind == "oni_warlord":
+		return ["perilous", "combo", "lunge", "slash"] if phase >= 2 else ["slash", "perilous", "lunge"]
+	return patterns_for_phase(phase)
+
 static func pick_pattern(phase: int, tick: int) -> String:
 	var pool := patterns_for_phase(phase)
 	return pool[tick % pool.size()]
@@ -91,7 +96,8 @@ func process(delta: float) -> void:
 				if vel: vel.x = 0.0
 				if boss.state_timer <= 0.0:
 					_tick += 1
-					boss.pattern = pick_pattern(boss.phase, _tick)
+					var pool := patterns_for(boss.get("kind", "crimson_ronin"), boss.phase)
+					boss.pattern = pool[_tick % pool.size()]
 					boss.state = "telegraph"
 					boss.state_timer = pattern_spec(boss.pattern).telegraph
 			"telegraph":

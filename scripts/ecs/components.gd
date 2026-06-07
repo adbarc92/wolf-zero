@@ -260,6 +260,8 @@ static func ai(behavior_type: String = "patrol") -> Dictionary:
 static func boss(boss_name: String = "Crimson Ronin") -> Dictionary:
 	return {
 		"name": boss_name,
+		"is_final": true,
+		"kind": "crimson_ronin",
 		"phase": 1,
 		"state": "intro",
 		"state_timer": 1.2,
