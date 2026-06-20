@@ -44,7 +44,7 @@ func process(delta: float) -> void:
 				_process_stagger(entity_id, ai, delta)
 
 
-func _process_idle(entity_id: int, ai: Dictionary, pos: Dictionary, player_pos: Dictionary, player_id: int) -> void:
+func _process_idle(entity_id: int, ai: Dictionary, pos: Dictionary, player_pos: Variant, player_id: int) -> void:
 	# Check for player detection
 	if _can_detect_player(ai, pos, player_pos):
 		ai.state = "chase"
@@ -111,7 +111,7 @@ static func support_heal(current: int, max_hp: int, amount: int) -> int:
 	return min(max_hp, current + amount)
 
 
-func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Dictionary, player_id: int, _delta: float) -> void:
+func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Variant, player_id: int, _delta: float) -> void:
 	var enemy = get_component(entity_id, "enemy")
 	# Aggro: a nearby echo decoy steals the enemy's attention.
 	if ai.can_be_distracted:
@@ -259,7 +259,7 @@ func _process_stagger(entity_id: int, ai: Dictionary, delta: float) -> void:
 		ai.state = "chase"
 
 
-func _can_detect_player(ai: Dictionary, pos: Dictionary, player_pos: Dictionary) -> bool:
+func _can_detect_player(ai: Dictionary, pos: Dictionary, player_pos: Variant) -> bool:
 	if not player_pos:
 		return false
 
