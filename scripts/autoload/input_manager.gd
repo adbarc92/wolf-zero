@@ -25,8 +25,10 @@ var tap_max_duration: float = 0.2
 ## Sensitivity multiplier for gestures
 var gesture_sensitivity: float = 1.0
 
-## Current control scheme: "gesture" or "buttons"
-var control_scheme: String = "gesture"
+## Current control scheme. "buttons" (the canonical on-screen TouchControls) is the
+## default; touch actions are synthesized by TouchScreenButton nodes, so this manager
+## does nothing in that mode. "gesture" is a legacy/opt-in scheme handled below.
+var control_scheme: String = "buttons"
 
 # =============================================================================
 # STATE

@@ -6,16 +6,25 @@ extends CanvasLayer
 
 var force_visible := false
 
+## On-screen control layout for a 1920x1080 viewport. Positions are the top-left
+## corner of each BTN-sized (square) button; all stay fully on-screen and never
+## overlap (asserted by test_touch_controls.gd). Left thumb = movement, right
+## thumb = a 3x3-minus-2 action cluster. Exact ergonomics need on-device tuning.
 static func layout() -> Array:
 	return [
-		{"action": "move_left",     "glyph": "<",    "pos": Vector2(150, 920),  "color": Color(1,1,1,0.25)},
-		{"action": "move_right",    "glyph": ">",    "pos": Vector2(310, 920),  "color": Color(1,1,1,0.25)},
-		{"action": "crouch",        "glyph": "v",    "pos": Vector2(230, 1010), "color": Color(1,1,1,0.2)},
-		{"action": "jump",          "glyph": "JMP",  "pos": Vector2(1790, 940), "color": Color(0.4,0.9,1,0.3)},
-		{"action": "attack_light",  "glyph": "ATK",  "pos": Vector2(1650, 980), "color": Color(1,0.5,0.4,0.3)},
-		{"action": "parry",         "glyph": "DEF",  "pos": Vector2(1700, 840), "color": Color(0.6,0.8,1,0.35)},
-		{"action": "dash",          "glyph": "DSH",  "pos": Vector2(1540, 940), "color": Color(0.8,1,0.6,0.3)},
-		{"action": "echo_activate", "glyph": "ECHO", "pos": Vector2(1850, 820), "color": Color(0.9,0.6,1,0.3)},
+		# Left thumb: movement
+		{"action": "move_left",     "glyph": "<",     "pos": Vector2(140, 830),  "color": Color(1,1,1,0.25)},
+		{"action": "move_right",    "glyph": ">",     "pos": Vector2(300, 830),  "color": Color(1,1,1,0.25)},
+		{"action": "crouch",        "glyph": "v",     "pos": Vector2(220, 960),  "color": Color(1,1,1,0.2)},
+		# Right thumb: actions (top row)
+		{"action": "attack_heavy",  "glyph": "HVY",   "pos": Vector2(1480, 700), "color": Color(1,0.4,0.3,0.3)},
+		{"action": "parry",         "glyph": "DEF",   "pos": Vector2(1620, 700), "color": Color(0.6,0.8,1,0.35)},
+		{"action": "echo_activate", "glyph": "ECHO",  "pos": Vector2(1760, 700), "color": Color(0.9,0.6,1,0.3)},
+		# Right thumb: actions (bottom rows)
+		{"action": "dash",          "glyph": "DSH",   "pos": Vector2(1480, 830), "color": Color(0.8,1,0.6,0.3)},
+		{"action": "attack_light",  "glyph": "ATK",   "pos": Vector2(1620, 830), "color": Color(1,0.5,0.4,0.3)},
+		{"action": "jump",          "glyph": "JMP",   "pos": Vector2(1760, 830), "color": Color(0.4,0.9,1,0.3)},
+		{"action": "dodge",         "glyph": "DODGE", "pos": Vector2(1620, 960), "color": Color(0.7,0.9,1,0.3)},
 	]
 
 static func should_show() -> bool:
