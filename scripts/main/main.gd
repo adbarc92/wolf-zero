@@ -18,6 +18,7 @@ var _arena_enemies: Dictionary = {}  # arena_index -> Array[entity_id]
 var _current_arena: int = -1
 var _won: bool = false
 var _audio: AudioManager
+var _level: Level
 
 
 static func archetype(kind: String) -> Dictionary:
@@ -228,7 +229,8 @@ func _start_level() -> void:
 	_arena_enemies.clear()
 	_current_arena = -1
 	_won = false
-	_player_spawn = LevelOne.SPAWN
+	_level = Levels.create(GameState.current_level_id)
+	_player_spawn = _level.spawn
 	_player_entity_id = _spawn_player(_player_spawn)
 	GameState.player_entity_id = _player_entity_id
 	_build_level()
@@ -255,16 +257,16 @@ func _restart_level() -> void:
 
 
 func _build_level() -> void:
-	for p in LevelOne.platforms():
+	for p in _level.platforms():
 		_add_platform(p[0], p[1])
 	camera.limit_left = 0
-	camera.limit_right = int(LevelOne.EXTENT_X)
+	camera.limit_right = int(_level.extent_x)
 	camera.limit_top = -400
-	camera.limit_bottom = int(LevelOne.FLOOR_Y) + 120
+	camera.limit_bottom = int(_level.floor_y) + 120
 
 	var goal := ColorRect.new()
 	goal.size = Vector2(20, 300)
-	goal.position = Vector2(LevelOne.GOAL_X, LevelOne.FLOOR_Y - 300)
+	goal.position = Vector2(_level.goal_x, _level.floor_y - 300)
 	goal.color = Color(0.0, 0.9, 1.0, 0.6)
 	game.get_node("World").add_child(goal)
 
@@ -429,7 +431,7 @@ func _spawn_boss(position: Vector2, kind: String = "crimson_ronin") -> int:
 func _activate_arena(index: int) -> void:
 	_arenas_activated.append(index)
 	_current_arena = index
-	var arena = LevelOne.arenas()[index]
+	var arena = _level.arenas()[index]
 	_player_spawn = arena.checkpoint
 	var ids: Array = []
 	for spec in arena.enemies:
@@ -449,7 +451,7 @@ func _restore_arena(index: int) -> void:
 				n.queue_free()
 			ECS.destroy_entity(eid)
 	# Re-spawn the roster.
-	var arena = LevelOne.arenas()[index]
+	var arena = _level.arenas()[index]
 	var ids: Array = []
 	for spec in arena.enemies:
 		if spec[0] == "crimson_ronin" or spec[0] == "oni_warlord":
@@ -536,7 +538,7 @@ func _process(delta: float) -> void:
 		# Update camera to follow player
 		var player_pos = ECS.get_component(_player_entity_id, "position")
 		if player_pos:
-			camera.position = Vector2(player_pos.x, LevelOne.FLOOR_Y - 120)
+			camera.position = Vector2(player_pos.x, _level.floor_y - 120)
 
 			var bosses = ECS.get_entities_with("boss")
 			if bosses.size() > 0:
@@ -545,15 +547,15 @@ func _process(delta: float) -> void:
 					GameEvents.boss_health.emit(bh.current, bh.max)
 
 			var px = ECS.get_component(_player_entity_id, "position").x
-			var idx = LevelOne.arena_to_activate(px, _arenas_activated)
+			var idx = _level.arena_to_activate(px, _arenas_activated)
 			if idx >= 0:
 				_activate_arena(idx)
 
-			var final_idx = LevelOne.arenas().size() - 1
+			var final_idx = _level.arenas().size() - 1
 			var final_cleared = _arenas_activated.has(final_idx) \
 				and _arena_enemies.has(final_idx) \
 				and _living_count(_arena_enemies[final_idx]) == 0
-			if not _won and LevelOne.is_level_won(px, final_cleared):
+			if not _won and _level.is_level_won(px, final_cleared):
 				_won = true
 				GameState.win_run()
 				get_tree().paused = true

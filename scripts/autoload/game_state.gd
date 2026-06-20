@@ -37,6 +37,9 @@ var current_state: State = State.MENU:
 ## Current mission being played
 var current_mission: int = -1
 
+## Current level id (see Levels registry). Drives which Level main.gd loads.
+var current_level_id: String = "level_one"
+
 ## Current checkpoint in mission
 var current_checkpoint: int = 0
 
@@ -119,6 +122,7 @@ func save_game() -> void:
 		"mission_progress": mission_progress,
 		"settings": settings,
 		"current_mission": current_mission,
+		"current_level_id": current_level_id,
 		"current_checkpoint": current_checkpoint,
 	}
 
@@ -160,6 +164,8 @@ func load_game() -> bool:
 		_merge_dict(settings, save_data.settings)
 	if save_data.has("current_mission"):
 		current_mission = save_data.current_mission
+	if save_data.has("current_level_id"):
+		current_level_id = save_data.current_level_id
 	if save_data.has("current_checkpoint"):
 		current_checkpoint = save_data.current_checkpoint
 
