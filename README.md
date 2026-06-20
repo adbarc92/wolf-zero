@@ -154,11 +154,16 @@ The game starts with a test scene containing:
 
 ## Mobile Controls
 
-- **Left side**: Virtual joystick for movement
-- **Right side tap**: Light attack
-- **Right side swipe**: Heavy attack / Dodge
-- **Swipe up**: Jump
-- **Two-finger tap**: Activate Echo
+On-screen buttons are the canonical touch scheme (`control_scheme = "buttons"`). Each is a
+`TouchScreenButton` that presses/releases a real input action natively (no gesture latency),
+which matters for parry timing.
+
+- **Left thumb**: `<` / `>` move, `v` crouch
+- **Right thumb**: `JMP` jump, `ATK` light, `HVY` heavy, `DEF` parry, `DODGE` dodge, `DSH` dash, `ECHO` echo
+
+Button positions are tuned for a 1920×1080 landscape viewport; exact ergonomics still need
+on-device tuning. A legacy gesture scheme (`control_scheme = "gesture"`) remains in
+`input_manager.gd` but is off by default.
 
 ## Troubleshooting
 
