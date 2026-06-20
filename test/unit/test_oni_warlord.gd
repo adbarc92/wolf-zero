@@ -2,7 +2,7 @@ extends GutTest
 const Boss = preload("res://scripts/ecs/systems/boss_system.gd")
 
 func test_final_arena_is_oni_warlord():
-	var arenas = LevelOne.arenas()
+	var arenas = LevelOne.new().arenas()
 	assert_eq(arenas[arenas.size() - 1].enemies[0][0], "oni_warlord")
 
 func test_warlord_uses_perilous_from_phase_one():
