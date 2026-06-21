@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bptpm1isydhi5"
-path="res://.godot/imported/warped-city-sky.png-284d11b8cef493937b6812549d775579.ctex"
+uid="uid://bmmwmledsqgna"
+path="res://.godot/imported/central-city-fog-mid.png-afa60cf1bcf44c2e94c309ebdad572c3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/environment/warped-city-sky.png"
-dest_files=["res://.godot/imported/warped-city-sky.png-284d11b8cef493937b6812549d775579.ctex"]
+source_file="res://assets/environment/central-city-fog-mid.png"
+dest_files=["res://.godot/imported/central-city-fog-mid.png-afa60cf1bcf44c2e94c309ebdad572c3.ctex"]
 
 [params]
 

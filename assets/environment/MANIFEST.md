@@ -1,40 +1,41 @@
-# Environment Art — ansimuz "Warped City" parallax (CC0)
+# Environment Art — Anokolisa "Sidescroller Shooter — Central City"
 
-Source pack: **Warped City** by ansimuz — https://ansimuz.itch.io/warped-city
-License: **Creative Commons Zero v1.0 Universal (CC0)** — no attribution required for the art.
+Source pack: **Sidescroller Shooter — Central City** by **Anokolisa**
+— https://anokolisa.itch.io/sidescroller-shooter-central-city
 
-> ⚠️ BUNDLED-MUSIC EXCEPTION: the Warped City download ships a music track
-> (credited to Pascal Belisle) under a **separate** license. Do NOT vendor or
-> ship that audio with this lane. This lane uses ONLY the parallax art layers.
+License: free for **commercial** use and modification; **attribution appreciated**
+(credit Anokolisa). No standalone resale/redistribution as an asset pack. (Confirmed
+by the author in the itch.io comments — there is no separate license file in the pack.)
+This is permissive enough to bundle inside the project; please keep Anokolisa in the
+game credits.
 
-## Current state of this directory
+The full pack lives at `assets/Sidescroller Shooter - Central City/` (buildings, props,
+tilesets + the background layers). `SceneBackdrop` only uses the **background** layers,
+copied here under clean names; the buildings/props/tiles are a foreground **tileset**
+for level geometry (a separate level-art task), not parallax.
 
-The PNGs currently committed here are **programmatically generated placeholders**
-(simple cyberpunk-toned gradients) because the real CC0 art could not be fetched
-from the network at build time. They exist so `SceneBackdrop` builds cleanly and
-the unit test can assert the layer count.
+## Parallax layers (far → near)
 
-`SceneBackdrop` (`scripts/render/scene_backdrop.gd`) loads its layers **by path**
-from this directory. To swap in the real art, replace the placeholder files with
-the real Warped City layers **using the exact same filenames** below — no code
-change required.
+`SceneBackdrop` (`scripts/render/scene_backdrop.gd`) loads these **by path** from this
+directory. Swapping art is a data-only edit to `SceneBackdrop.LAYERS`.
 
-## Layer files (far → near) — drop-in target paths
+| File (this dir)                | Role                         | Pack source (Background/) |
+| ------------------------------ | ---------------------------- | ------------------------- |
+| `central-city-sky.png`         | back / purple-neon sky       | `Base Color.png` (480×320) |
+| `central-city-fog-mid.png`     | mid fog band (tiles horiz.)  | `Mid Fog.png` (16×144)     |
+| `central-city-fog-front.png`   | near fog band (tiles horiz.) | `Frontal Fog.png` (16×144) |
 
-Warped City ships a 3-layer parallax. Map the pack's layers onto these filenames:
-
-| Target file (this dir)                | Role                  | Warped City source layer (rename to this) |
-| ------------------------------------- | --------------------- | ------------------------------------------ |
-| `assets/environment/warped-city-sky.png`       | back / sky gradient   | the farthest sky/back layer  |
-| `assets/environment/warped-city-far.png`       | mid distant cityscape | the middle distant-buildings layer |
-| `assets/environment/warped-city-buildings.png` | near buildings        | the nearest buildings/foreground parallax layer |
-
-(Exact source filenames vary by pack revision — ansimuz commonly names them
-`back.png` / `middle.png` / `foreground.png` or `far-buildings.png` etc. Rename
-whichever maps to each role above. Keep the target names on the left unchanged.)
+The fog strips are 16 px wide and tile horizontally via `motion_mirroring`; the sky is a
+gradient scaled to cover the 1920×1080 viewport.
 
 ## Notes / scope
 
-- This is GENERIC cyberpunk art. No Japanese / Neo-Edo motifs (torii, lanterns,
-  kanji neon) are part of this lane — that overlay is a separate, blocked
-  commission item.
+- **Visual tuning pending:** the per-layer `scale`/`offset` in `SceneBackdrop.LAYERS` are
+  a sensible first pass set without a running viewport. Fine-tune the fog band heights and
+  vertical placement on-screen / on-device.
+- **No distant city silhouette layer.** This pack's city is meant to be *built from tiles*
+  in the foreground, so the backdrop is sky + fog only. A distant-building parallax layer
+  would need to be composed from the `Buildings`/`Background Props` tiles (future work) or
+  sourced from another pack.
+- Still GENERIC cyberpunk — the Neo-Edo overlay (torii / lanterns / kanji neon) remains a
+  separate identity pass on top of this base.
