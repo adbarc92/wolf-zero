@@ -127,6 +127,17 @@ godot.exe --path .
 godot --path .
 ```
 
+### Mobile Builds (Android / iOS)
+
+The project ships export presets in `export_presets.cfg`. To build a signed debug APK:
+
+```bash
+godot --headless --path . --export-debug "Android" build/wolf-zero-debug.apk
+```
+
+See [docs/EXPORT.md](docs/EXPORT.md) for the one-time toolchain setup (SDK path, JDK,
+debug keystore) and verification/install commands. iOS is config-only and requires macOS + Xcode to build.
+
 ### Test Scene
 
 The game starts with a test scene containing:
