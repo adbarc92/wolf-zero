@@ -51,3 +51,7 @@ Thumbs.db
 # Mattz Art download archives (redundant with the extracted packs)
 assets/MattzArt/**/*.zip
 assets/MattzArt/*.zip
+
+# TomMusic Free Fantasy SFX pack — 372MB source; only the 2 used oggs are committed under assets/audio/sfx/
+assets/Free Fantasy SFX Pack By TomMusic/
+assets/Free Fantasy SFX Pack By TomMusic.zip
