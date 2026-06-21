@@ -72,6 +72,9 @@ var player_data: Dictionary = {
 	"has_grapple": false,
 	"has_air_dash": false,
 
+	# First-run onboarding (Lane D): set true once tutorial prompts have shown.
+	"tutorial_seen": false,
+
 	# Echo upgrades
 	"echo_record_time": 3.0,
 	"echo_cooldown": 8.0,
