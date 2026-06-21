@@ -1,24 +1,30 @@
 class_name LevelOne
-extends RefCounted
-## Static data + pure flow helpers for the vertical-slice level.
+extends Level
+## The vertical-slice level (Neo Edo). Provides geometry + arena data; the flow
+## helpers (arena_to_activate / is_level_won / roster_for) are inherited from Level.
 
-const SPAWN := Vector2(200, 540)
-const GOAL_X := 4950.0
-const FLOOR_Y := 600.0
-const EXTENT_X := 5200.0
+
+func _init() -> void:
+	spawn = Vector2(200, 540)
+	floor_y = 600.0
+	extent_x = 5200.0
+	goal_x = 4950.0
+	display_name = "Neo Edo"
+
 
 ## Solid geometry as rects [Vector2 center, Vector2 size].
-static func platforms() -> Array:
+func platforms() -> Array:
 	return [
-		[Vector2(EXTENT_X / 2.0, FLOOR_Y + 16), Vector2(EXTENT_X, 32)],
+		[Vector2(extent_x / 2.0, floor_y + 16), Vector2(extent_x, 32)],
 		[Vector2(700, 470), Vector2(180, 20)],
 		[Vector2(1050, 400), Vector2(160, 20)],
 		[Vector2(1700, 430), Vector2(40, 320)],
 		[Vector2(2750, 470), Vector2(200, 20)],
 	]
 
+
 ## Ordered arenas: trigger_x, checkpoint Vector2, enemy roster [ [type, Vector2], ... ].
-static func arenas() -> Array:
+func arenas() -> Array:
 	return [
 		{"trigger_x": 1300.0, "checkpoint": Vector2(1250, 540), "enemies": [
 			["ronin_drone", Vector2(1600, 540)], ["ronin_drone", Vector2(1850, 540)]]},
@@ -30,23 +36,3 @@ static func arenas() -> Array:
 		{"trigger_x": 4050.0, "checkpoint": Vector2(4000, 540), "enemies": [
 			["oni_warlord", Vector2(4450, 540)]]},
 	]
-
-## Enemy roster for a given arena index, or empty if out of range.
-static func roster_for(index: int) -> Array:
-	var defs := arenas()
-	if index < 0 or index >= defs.size():
-		return []
-	return defs[index].enemies
-
-## Index of the first not-yet-activated arena the player has reached, else -1.
-static func arena_to_activate(player_x: float, activated: Array) -> int:
-	var defs := arenas()
-	for i in range(defs.size()):
-		if not activated.has(i) and player_x >= defs[i].trigger_x:
-			return i
-	return -1
-
-
-## Win when the player passes the goal AND the final arena has been cleared.
-static func is_level_won(player_x: float, final_arena_cleared: bool) -> bool:
-	return final_arena_cleared and player_x >= GOAL_X
