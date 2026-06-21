@@ -101,7 +101,7 @@ var settings: Dictionary = {
 	"sfx_volume": 1.0,
 	"haptic_feedback": true,
 	"gesture_sensitivity": 1.0,
-	"control_scheme": "gesture",  # "gesture" or "buttons"
+	"control_scheme": "buttons",  # "buttons" (canonical on-screen controls) or "gesture" (legacy)
 	"colorblind_mode": "none",  # "none", "protanopia", "deuteranopia", "tritanopia"
 	"screen_shake": true,
 }
