@@ -14,20 +14,19 @@ Shipped sound effects come from two packs, both free for commercial use:
 | Event key   | Source pack       | Source file                  |
 |-------------|-------------------|------------------------------|
 | `slash`     | TomMusic (sword)  | `Sword Attack 1.ogg`         |
-| `hit`       | Kenney Impact     | `impactPunch_heavy_001.ogg`  |
+| `hit`       | TomMusic (sword)  | `Sword Impact Hit 1.ogg`     |
 | `hit_light` | Kenney Impact     | `impactPunch_medium_000.ogg` |
 | `jump`      | Kenney Interface  | `select_006.ogg`             |
 | `dash`      | Kenney Impact     | `footstep_concrete_004.ogg`  |
 | `dodge`     | Kenney Interface  | `select_002.ogg`             |
 | `parry`     | TomMusic (sword)  | `Sword Parry 1.ogg`          |
-| `block`     | Kenney Impact     | `impactWood_medium_000.ogg`  |
+| `block`     | TomMusic (sword)  | `Sword Blocked 1.ogg`        |
 | `echo`      | Kenney Interface  | `confirmation_001.ogg`       |
 | `death`     | Kenney Interface  | `error_006.ogg`              |
 
 ## Notes
 
-- `slash`/`parry` are real sword swing + sword-on-sword parry from the TomMusic pack.
-  The 372 MB source pack is git-ignored; only these two oggs are committed (under this
-  dir). Sword **hit** and **blocked** variants exist in the same pack if we later want
-  to upgrade `hit`/`block` off the Kenney stand-ins.
+- `slash`/`hit`/`parry`/`block` are all real sword SFX from the TomMusic pack (swing,
+  impact hit, parry, block). The 372 MB source pack is git-ignored; only the four used
+  oggs are committed (under this dir). The remaining keys use Kenney CC0.
 - Music is still the procedural bed (`SfxGenerator.music()`); not sourced here.
