@@ -21,6 +21,10 @@ const ENEMY_ANIMS := [
 	"light_4_nomove", "light_5_nomove",
 ]
 
+# The boss (distinct Demon/Wolf Samurai sheet) covers the full clip set that
+# derive_clip can emit — same names as the player, real or aliased.
+const BOSS_ANIMS := PLAYER_ANIMS
+
 
 func test_player_returns_sprite_frames():
 	var sf = CF.player()
@@ -82,3 +86,35 @@ func test_enemy_fps_and_loop_parity_sample():
 	assert_eq(sf.get_animation_speed("light_1"), 14.0, "enemy light_1 fps")
 	assert_false(sf.get_animation_loop("light_1"), "enemy light_1 does not loop")
 	assert_eq(sf.get_animation_speed("light_1_nomove"), 16.0, "enemy light_1_nomove fps")
+
+
+func test_boss_returns_sprite_frames():
+	var sf = CF.boss()
+	assert_true(sf is SpriteFrames, "boss() returns SpriteFrames")
+
+
+func test_boss_has_full_clip_set():
+	var sf = CF.boss()
+	for name in BOSS_ANIMS:
+		assert_true(sf.has_animation(name), "boss has animation '%s'" % name)
+
+
+func test_boss_anim_count_matches():
+	var sf = CF.boss()
+	assert_eq(sf.get_animation_names().size(), BOSS_ANIMS.size(),
+		"boss animation count is exactly the documented set")
+
+
+# Frame dimensions: the strips are sliced at the documented per-character size,
+# so the first idle frame must be exactly that wide/tall (player 96x96,
+# enemy 96x64, boss 128x108).
+func test_frame_sizes_match_source_sheets():
+	var checks = [
+		[CF.player(), 96, 96, "player"],
+		[CF.enemy(), 96, 64, "enemy"],
+		[CF.boss(), 128, 108, "boss"],
+	]
+	for c in checks:
+		var tex = c[0].get_frame_texture("idle", 0)
+		assert_eq(tex.get_width(), c[1], "%s idle frame width" % c[3])
+		assert_eq(tex.get_height(), c[2], "%s idle frame height" % c[3])

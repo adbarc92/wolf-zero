@@ -126,6 +126,11 @@ func process(delta: float) -> void:
 			anim_node.modulate = Color(0.6, 0.8, 1.0)
 
 
+## Half-height of the 32x64 collision box, in local node units. The node origin
+## is the body centre, so floor contact is +FLOOR_ANCHOR below it.
+const FLOOR_ANCHOR := 32.0
+
+
 func _ensure_anim_node(node: Node, set_name: String) -> AnimatedSprite2D:
 	var existing := node.get_node_or_null("Anim")
 	if existing is AnimatedSprite2D:
@@ -136,6 +141,24 @@ func _ensure_anim_node(node: Node, set_name: String) -> AnimatedSprite2D:
 	var anim := AnimatedSprite2D.new()
 	anim.name = "Anim"
 	anim.sprite_frames = frames
+	# Pixel-art: nearest-neighbour so the samurai sheets stay crisp when scaled
+	# (the project default is Linear, which would soften them).
+	anim.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Anchor the frame bottom (≈ the character's feet) to the collision-box floor,
+	# regardless of the per-character frame height (player 96, enemy 64, boss 108).
+	# AnimatedSprite2D is centred, so the frame bottom sits at offset.y + frame_h/2;
+	# solving for it landing on +FLOOR_ANCHOR gives offset.y = FLOOR_ANCHOR - h/2.
+	var fh := _frame_height(frames)
+	if fh > 0:
+		anim.offset = Vector2(0, FLOOR_ANCHOR - fh / 2.0)
 	anim.play("idle")
 	node.add_child(anim)
 	return anim
+
+
+## Height of a single frame, read from the idle clip's first frame (0 if absent).
+func _frame_height(frames: SpriteFrames) -> int:
+	if frames == null or not frames.has_animation("idle") or frames.get_frame_count("idle") == 0:
+		return 0
+	var tex := frames.get_frame_texture("idle", 0)
+	return tex.get_height() if tex else 0

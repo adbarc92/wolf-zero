@@ -47,3 +47,7 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# Mattz Art download archives (redundant with the extracted packs)
+assets/MattzArt/**/*.zip
+assets/MattzArt/*.zip

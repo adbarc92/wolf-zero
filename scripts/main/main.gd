@@ -89,6 +89,7 @@ func _initialize_ecs() -> void:
 	anim.frame_sets = {
 		"player": CharacterFrames.player(),
 		"enemy": CharacterFrames.enemy(),
+		"boss": CharacterFrames.boss(),
 	}
 	ECS.register_system(anim)
 
@@ -345,7 +346,7 @@ func _spawn_boss(position: Vector2, kind: String = "crimson_ronin") -> int:
 	ECS.add_component(id, "position", Components.position(position.x, position.y))
 	ECS.add_component(id, "velocity", Components.velocity())
 	ECS.add_component(id, "collision", Components.collision(32, 64))
-	var spr = Components.sprite(); spr.frame_set = "enemy"; spr.modulate = cfg.tint
+	var spr = Components.sprite(); spr.frame_set = "boss"; spr.modulate = cfg.tint
 	ECS.add_component(id, "sprite", spr)
 	ECS.add_component(id, "health", Components.health(cfg.hp))
 	ECS.add_component(id, "weapon", Components.weapon(cfg.dmg, 0.5))
