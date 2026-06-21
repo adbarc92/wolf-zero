@@ -76,7 +76,9 @@ func _ready() -> void:
 	_build_boss_bar()
 	_build_lives_label()
 	_connect_signals()
-	_initialize_bars()
+	# Deferred so bar sizes are applied after the initial layout pass
+	# (avoids "anchors will override size after _ready" warnings).
+	_initialize_bars.call_deferred()
 
 	# Hide combo counter initially
 	combo_counter.visible = false

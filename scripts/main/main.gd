@@ -459,35 +459,6 @@ func _restore_arena(index: int) -> void:
 	_arena_enemies[index] = ids
 
 
-func _create_test_platforms() -> void:
-	# Create a simple floor platform
-	var floor_node = StaticBody2D.new()
-	floor_node.name = "Floor"
-	floor_node.position = Vector2(960, 600)
-	game.get_node("World").add_child(floor_node)
-
-	var floor_collision = CollisionShape2D.new()
-	var floor_shape = RectangleShape2D.new()
-	floor_shape.size = Vector2(1920, 32)
-	floor_collision.shape = floor_shape
-	floor_node.add_child(floor_collision)
-
-	# Visual
-	var floor_sprite = ColorRect.new()
-	floor_sprite.size = Vector2(1920, 32)
-	floor_sprite.position = Vector2(-960, -16)
-	floor_sprite.color = Color(0.2, 0.15, 0.3)  # Dark purple
-	floor_node.add_child(floor_sprite)
-
-	# Add some platforms
-	_add_platform(Vector2(400, 450), Vector2(200, 20))
-	_add_platform(Vector2(700, 350), Vector2(150, 20))
-	_add_platform(Vector2(1000, 400), Vector2(180, 20))
-
-	# Tall test wall
-	_add_platform(Vector2(1700, 450), Vector2(40, 300))
-
-
 func _add_platform(position: Vector2, size: Vector2) -> void:
 	var platform = StaticBody2D.new()
 	platform.position = position

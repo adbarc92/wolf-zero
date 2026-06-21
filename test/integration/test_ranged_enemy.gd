@@ -24,3 +24,10 @@ func test_ranged_enemy_in_attack_state_spawns_a_projectile():
 	assert_eq(ecs.get_entities_with("tag_projectile").size(), 0, "no projectiles before")
 	ai.process(0.016)
 	assert_eq(ecs.get_entities_with("tag_projectile").size(), 1, "ranged enemy fired one projectile")
+
+	# No scene container exists in this headless test, so the spawned projectile
+	# node is parentless and won't be auto-freed — free it to avoid an orphan.
+	for proj_id in ecs.get_entities_with("tag_projectile"):
+		var n = ecs.get_entity_node(proj_id)
+		if n:
+			n.free()
