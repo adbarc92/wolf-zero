@@ -4,7 +4,7 @@ extends RefCounted
 ## game from concrete level classes — add a level by writing a Level subclass and
 ## registering it in `_make` + `_ORDER`.
 
-const _ORDER: Array[String] = ["level_one"]
+const _ORDER: Array[String] = ["level_one", "level_two"]
 
 
 ## Build a fresh Level instance for the given id (falls back to the first level).
@@ -12,6 +12,8 @@ static func create(id: String) -> Level:
 	match id:
 		"level_one":
 			return LevelOne.new()
+		"level_two":
+			return LevelTwo.new()
 		_:
 			push_warning("Levels: unknown level id '%s', using first level" % id)
 			return LevelOne.new()

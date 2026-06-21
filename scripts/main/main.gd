@@ -3,9 +3,6 @@ extends Node
 ##
 ## Initializes ECS systems and manages game flow.
 
-const FK := "res://assets/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/"
-const FK2 := "res://assets/FreeKnight_v1/Colour2/NoOutline/120x80_PNGSheets/"
-
 @onready var game: Node2D = $Game
 @onready var entities_node: Node2D = $Game/Entities
 @onready var camera: Camera2D = $Game/Camera2D
@@ -47,10 +44,16 @@ func _ready() -> void:
 	_initialize_ecs()
 	_connect_signals()
 	_setup_vfx_manager()
-	_setup_parallax()
+	add_child(SceneBackdrop.new())
 
 	_audio = AudioManager.new()
 	add_child(_audio)
+
+	# First-run onboarding prompts (Lane D). Shown once, then persisted as seen.
+	if not GameState.player_data.get("tutorial_seen", false):
+		add_child(Tutorial.new())
+		GameState.player_data["tutorial_seen"] = true
+		GameState.save_game()
 
 	add_child(ScreenManager.new())
 	process_mode = Node.PROCESS_MODE_ALWAYS   # so _unhandled_input/_process run while paused
@@ -84,70 +87,12 @@ func _initialize_ecs() -> void:
 
 	var anim := AnimationSystem.new()
 	anim.frame_sets = {
-		"player": _build_player_frames(),
-		"enemy": _build_enemy_frames(),
+		"player": CharacterFrames.player(),
+		"enemy": CharacterFrames.enemy(),
 	}
 	ECS.register_system(anim)
 
 	print("ECS initialized with %d systems" % ECS.get_debug_info().system_count)
-
-
-func _build_player_frames() -> SpriteFrames:
-	var sf := SpriteFrames.new()
-	if sf.has_animation("default"):
-		sf.remove_animation("default")
-	SpriteFramesBuilder.add_strip(sf, "idle", load(FK + "_Idle.png"), 120, 80, 10.0)
-	SpriteFramesBuilder.add_strip(sf, "run", load(FK + "_Run.png"), 120, 80, 14.0)
-	SpriteFramesBuilder.add_strip(sf, "jump", load(FK + "_Jump.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "fall", load(FK + "_Fall.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "dash", load(FK + "_Dash.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "roll", load(FK + "_Roll.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "slide", load(FK + "_Slide.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_1", load(FK + "_Attack.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_2", load(FK + "_Attack2.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_3", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_4", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_5", load(FK + "_AttackCombo.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "hit", load(FK + "_Hit.png"), 120, 80, 12.0, false)
-	SpriteFramesBuilder.add_strip(sf, "crouch", load(FK + "_Crouch.png"), 120, 80, 8.0)
-	SpriteFramesBuilder.add_strip(sf, "crouch_walk", load(FK + "_CrouchWalk.png"), 120, 80, 12.0)
-	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK + "_WallSlide.png"), 120, 80, 10.0)
-	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK + "_WallClimb.png"), 120, 80, 12.0)
-	SpriteFramesBuilder.add_strip(sf, "death", load(FK + "_Death.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "jump_fall_inbetween", load(FK + "_JumpFallInbetween.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "turn_around", load(FK + "_TurnAround.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "crouch_transition", load(FK + "_CrouchTransition.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "crouch_attack", load(FK + "_CrouchAttack.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_1_nomove", load(FK + "_AttackNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_2_nomove", load(FK + "_Attack2NoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_3_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_4_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_5_nomove", load(FK + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	return sf
-
-
-func _build_enemy_frames() -> SpriteFrames:
-	var sf := SpriteFrames.new()
-	if sf.has_animation("default"):
-		sf.remove_animation("default")
-	SpriteFramesBuilder.add_strip(sf, "idle", load(FK2 + "_Idle.png"), 120, 80, 10.0)
-	SpriteFramesBuilder.add_strip(sf, "run", load(FK2 + "_Run.png"), 120, 80, 12.0)
-	SpriteFramesBuilder.add_strip(sf, "light_1", load(FK2 + "_Attack.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "slide", load(FK2 + "_Slide.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "hit", load(FK2 + "_Hit.png"), 120, 80, 12.0, false)
-	SpriteFramesBuilder.add_strip(sf, "wall_slide", load(FK2 + "_WallSlide.png"), 120, 80, 10.0)
-	SpriteFramesBuilder.add_strip(sf, "wall_climb", load(FK2 + "_WallClimb.png"), 120, 80, 12.0)
-	SpriteFramesBuilder.add_strip(sf, "death", load(FK2 + "_Death.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "jump_fall_inbetween", load(FK2 + "_JumpFallInbetween.png"), 120, 80, 10.0, false)
-	SpriteFramesBuilder.add_strip(sf, "turn_around", load(FK2 + "_TurnAround.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "crouch_transition", load(FK2 + "_CrouchTransition.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "crouch_attack", load(FK2 + "_CrouchAttack.png"), 120, 80, 14.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_1_nomove", load(FK2 + "_AttackNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_2_nomove", load(FK2 + "_Attack2NoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_3_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_4_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	SpriteFramesBuilder.add_strip(sf, "light_5_nomove", load(FK2 + "_AttackComboNoMovement.png"), 120, 80, 16.0, false)
-	return sf
 
 
 func _setup_vfx_manager() -> void:
@@ -156,31 +101,6 @@ func _setup_vfx_manager() -> void:
 
 	# Set effect container for spawning VFX
 	VFXManager.set_effect_container(entities_node)
-
-
-func _setup_parallax() -> void:
-	var pbg := ParallaxBackground.new()
-	pbg.name = "Parallax"
-	_add_layer(pbg, "res://assets/MoonlitGraveyard/Background_0.png", 0.2, Vector2(2, 2))
-	_add_layer(pbg, "res://assets/MoonlitGraveyard/Background_1.png", 0.5, Vector2(2, 2))
-	add_child(pbg)
-
-
-func _add_layer(pbg: ParallaxBackground, path: String, scroll_scale: float, scale_v: Vector2) -> void:
-	var tex = load(path)
-	if tex == null:
-		push_warning("Parallax layer missing: " + path)
-		return
-	var layer := ParallaxLayer.new()
-	layer.motion_scale = Vector2(scroll_scale, scroll_scale)
-	layer.motion_mirroring = Vector2(tex.get_width() * scale_v.x, 0)
-	var spr := Sprite2D.new()
-	spr.texture = tex
-	spr.centered = false
-	spr.scale = scale_v
-	spr.position = Vector2(0, 0)
-	layer.add_child(spr)
-	pbg.add_child(layer)
 
 
 func _connect_signals() -> void:
@@ -254,6 +174,19 @@ func _restart_level() -> void:
 	_clear_level()
 	await get_tree().process_frame
 	_start_level()
+
+
+## Level cleared: advance into the next registered level, or finish the run if
+## this was the last one. Drives progression through GameState.current_level_id.
+func _advance_or_finish() -> void:
+	var next_id := Levels.next_after(GameState.current_level_id)
+	if next_id != "":
+		GameState.current_level_id = next_id
+		GameEvents.ui_show_message.emit("Stage Clear", 2.0)
+		_restart_level()
+	else:
+		GameState.win_run()
+		get_tree().paused = true
 
 
 func _build_level() -> void:
@@ -483,6 +416,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	match GameState.current_state:
 		GameState.State.MENU:
 			if event.is_action_pressed("ui_accept") or event.is_action_pressed("jump"):
+				GameState.current_level_id = Levels.first()
 				_start_level()
 		GameState.State.PLAYING:
 			if event.is_action_pressed("pause"):
@@ -528,8 +462,7 @@ func _process(delta: float) -> void:
 				and _living_count(_arena_enemies[final_idx]) == 0
 			if not _won and _level.is_level_won(px, final_cleared):
 				_won = true
-				GameState.win_run()
-				get_tree().paused = true
+				_advance_or_finish()
 
 	# Update echo cooldown HUD
 	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
@@ -672,8 +605,7 @@ func _finish_enemy_death(eid: int) -> void:
 	if b and b.get("is_final", true) and not _won:
 		_won = true
 		GameEvents.boss_defeated.emit()
-		GameState.win_run()
-		get_tree().paused = true
+		_advance_or_finish()
 
 	# Destroy enemy (this also removes its dying component)
 	var node = ECS.get_entity_node(eid)

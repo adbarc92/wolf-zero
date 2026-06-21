@@ -22,7 +22,8 @@ func test_registry_creates_known_level():
 func test_registry_order_helpers():
 	assert_eq(Levels.first(), "level_one")
 	assert_true(Levels.order().has("level_one"))
-	assert_eq(Levels.next_after("level_one"), "", "no level after the last one")
+	assert_eq(Levels.next_after("level_one"), "level_two", "level_two follows level_one")
+	assert_eq(Levels.next_after("level_two"), "", "no level after the last one")
 	assert_eq(Levels.next_after("bogus"), "", "unknown id has no successor")
 
 
