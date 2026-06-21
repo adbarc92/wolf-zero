@@ -7,9 +7,11 @@ event key it probes, in priority order:
 2. `res://assets/audio/sfx/<key>.wav`
 
 If neither file exists, it falls back to the procedural `SfxGenerator.make(<key>)`,
-so the game always has audio. **Today every key uses the procedural fallback** — the
-suite passes purely on fallback. Drop the files below in to upgrade any key; no code
-change is needed.
+so the game always has audio. **All 10 event keys now ship a real CC0 file** (Kenney
+Impact + Interface Sounds — see `sfx/CREDITS.md` for the per-key mapping); the loader
+prefers these over the procedural voices. The table below is the original drop-in spec,
+kept for reference / future upgrades — drop a new file at a target path to replace any
+key, no code change needed.
 
 ## Drop-in target paths (one file per event key)
 

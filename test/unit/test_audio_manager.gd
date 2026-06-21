@@ -44,6 +44,19 @@ func test_falls_back_to_procedural_when_file_missing():
 	else:
 		pass_test("death asset present; fallback path not exercised")
 
+func test_real_files_are_preferred_for_all_shipped_keys():
+	# For every event key, is_from_file must agree with whether a real asset is on
+	# disk — so a shipped .ogg/.wav is always used in preference to the procedural
+	# voice. Presence-agnostic: passes whether or not the assets are present.
+	var am = await _make_am()
+	for key in ["slash", "hit", "hit_light", "jump", "dash", "dodge",
+			"parry", "block", "echo", "death"]:
+		var has_file := ResourceLoader.exists("res://assets/audio/sfx/%s.ogg" % key) \
+			or ResourceLoader.exists("res://assets/audio/sfx/%s.wav" % key)
+		assert_eq(am.is_from_file(key), has_file,
+			"key '%s': is_from_file matches on-disk presence" % key)
+
+
 func test_play_after_fallback_does_not_crash():
 	var am = await _make_am()
 	for key in ["slash", "hit", "parry", "block", "death", "jump",
