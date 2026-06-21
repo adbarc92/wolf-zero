@@ -1,5 +1,5 @@
 extends GutTest
-## Lane B — SceneBackdrop (ansimuz Warped City CC0 parallax).
+## Lane B — SceneBackdrop (Anokolisa "Central City" cyberpunk parallax).
 
 const ENV_DIR := "res://assets/environment/"
 
@@ -12,7 +12,7 @@ func test_is_parallax_background():
 
 
 func test_expected_layer_count_is_three():
-	# Warped City ships a 3-layer parallax.
+	# Central City backdrop = sky gradient + 2 fog bands.
 	assert_eq(SceneBackdrop.expected_layer_count(), 3,
 		"backdrop is configured for exactly 3 parallax layers")
 
@@ -39,7 +39,7 @@ func test_every_layer_has_a_sprite_with_texture():
 
 
 func test_layer_textures_resolve_by_path():
-	# The real CC0 art drops in over placeholders at these exact paths.
+	# Each layer's art resolves at its exact assets/environment/ path.
 	for spec in SceneBackdrop.LAYERS:
 		var tex: Texture2D = load(ENV_DIR + spec.file)
 		assert_not_null(tex, "layer texture exists at %s%s" % [ENV_DIR, spec.file])
