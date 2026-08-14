@@ -7,7 +7,11 @@ func _arena():
 	var a = ecs.create_entity()
 	ecs.add_component(a, "position", Components.position(20, 0))
 	ecs.add_component(a, "velocity", Components.velocity())
-	var w = Components.weapon(20, 0.4); w.is_attacking = true; w.hitbox_active = true; w.attack_type = "enemy"; w.unblockable = true
+	var w = Components.weapon(20, 0.4)
+	w.is_attacking = true
+	w.hitbox_active = true
+	w.attack_type = "enemy"
+	w.unblockable = true
 	ecs.add_component(a, "weapon", w)
 	var en = Components.enemy("oni_warlord"); en.facing = -1
 	ecs.add_component(a, "enemy", en)

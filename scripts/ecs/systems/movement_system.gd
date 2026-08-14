@@ -135,7 +135,10 @@ func _apply_dodge_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, do
 	vel.y = 0  # No vertical movement during dodge
 
 
-func _apply_dash_movement(entity_id: int, _pos: Dictionary, vel: Dictionary, platformer: Dictionary, _input: Dictionary, _delta: float) -> void:
+func _apply_dash_movement(
+	entity_id: int, _pos: Dictionary, vel: Dictionary, platformer: Dictionary,
+	_input: Dictionary, _delta: float
+) -> void:
 	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
 	vel.x = direction * platformer.dash_speed

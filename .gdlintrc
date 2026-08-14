@@ -1,0 +1,22 @@
+# gdlint (gdtoolkit 4.x) configuration.
+#
+# Run:  uvx --from "gdtoolkit==4.*" gdlint scripts test
+#
+# Only two rules are tuned away from the defaults; everything else is stock.
+
+disable:
+  # gdlint wants one fixed global-scope order (signals, enums, consts, exports,
+  # pubvars, ...). This codebase instead groups definitions into commented
+  # sections by feature, which reads better in the large files (hud.gd, main.gd)
+  # and is used consistently throughout. Enforcing the default order would mean
+  # reshuffling ~56 definitions across files for no behavioural gain.
+  - class-definitions-order
+
+# The default is 100. The codebase sits comfortably under 120, and the handful
+# of lines that ran past it were wrapped rather than exempted.
+max-line-length: 120
+
+excluded_directories: !!set
+  .git: null
+  # Vendored test runner - not ours to lint.
+  addons: null

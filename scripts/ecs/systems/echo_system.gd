@@ -36,7 +36,7 @@ func process(delta: float) -> void:
 	_process_playback(delta)
 
 
-func _process_recording(delta: float) -> void:
+func _process_recording(_delta: float) -> void:
 	## Record player actions continuously
 	var recording_required: Array[String] = ["echo_data", "tag_player"]
 	for entity_id in ecs.get_entities_with_all(recording_required):
