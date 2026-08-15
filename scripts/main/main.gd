@@ -248,6 +248,15 @@ func _spawn_player(position: Vector2) -> int:
 	platformer.has_air_dash = GameState.player_data.has_air_dash
 	platformer.has_dash = true  # Slice grants dash (P0)
 
+	# Mega Man X-style responsiveness, applied to the player only: the shared
+	# component defaults stay slower so enemies still ramp up and coast, which is
+	# what makes them readable. Ground movement here reaches speed and stops in
+	# about a frame, and dash re-arms almost immediately so it can be chained.
+	var vel = ECS.get_component(entity_id, "velocity")
+	vel.acceleration = 8000.0
+	vel.friction = 6000.0
+	platformer.dash_cooldown_time = 0.05
+
 	# Apply echo upgrades
 	var echo_data = ECS.get_component(entity_id, "echo_data")
 	echo_data.max_record_time = GameState.player_data.echo_record_time

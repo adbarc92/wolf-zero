@@ -55,12 +55,21 @@ func process(delta: float) -> void:
 				and not platformer.is_sliding:
 			platformer.is_dashing = true
 			platformer.dash_duration = 0.2
-			platformer.dash_cooldown = 0.6
+			platformer.dash_cooldown = platformer.get("dash_cooldown_time", 0.6)
 
-		# Skip if dashing
+		# Dashing overrides horizontal speed, but gravity still applies so a dash
+		# off a ledge falls instead of hovering — and so the dash can be jumped
+		# out of (JumpSystem converts that into dash_jumping).
 		if platformer and platformer.is_dashing:
 			_apply_dash_movement(entity_id, pos, vel, platformer, input, delta)
+			_apply_gravity(vel, platformer, collision, delta)
 			continue
+
+		# A dash-jump keeps its speed until the player lands or steers away.
+		var dash_jumping: bool = platformer != null and platformer.get("dash_jumping", false)
+		if dash_jumping and dash_jump_is_over(vel, input, collision):
+			platformer.dash_jumping = false
+			dash_jumping = false
 
 		# Apply input-based horizontal movement (crouch slows you while grounded)
 		if input:
@@ -70,7 +79,7 @@ func process(delta: float) -> void:
 			var pc = get_component(entity_id, "parry")
 			if pc and pc.get("is_blocking", false) and collision and collision.on_ground:
 				move_scale = 0.15
-			_apply_input_movement(vel, input, delta, move_scale)
+			_apply_input_movement(vel, input, delta, move_scale, dash_jumping)
 
 		# Apply gravity
 		if platformer:
@@ -81,8 +90,9 @@ func process(delta: float) -> void:
 			var climbing: bool = input != null and input.jump_pressed and platformer.wall_run_timer > 0.0
 			vel.y = wall_adjust_velocity_y(vel.y, true, climbing, 120.0)
 
-		# Apply friction when no input
-		if input and input.move_direction == 0:
+		# Apply friction when no input. A dash-jump is exempt: releasing the
+		# stick mid-arc should coast, the way it does in X, not brake.
+		if input and input.move_direction == 0 and not dash_jumping:
 			_apply_friction(vel, delta)
 
 
@@ -96,14 +106,33 @@ static func wall_adjust_velocity_y(vy: float, on_wall: bool, climbing: bool, sli
 	return min(vy, slide_speed)
 
 
-func _apply_input_movement(vel: Dictionary, input: Dictionary, delta: float, speed_scale: float = 1.0) -> void:
+## A dash-jump ends on landing, or when the player steers against the direction
+## the dash carried them. Releasing the stick does not end it - that coasts.
+static func dash_jump_is_over(vel: Dictionary, input: Dictionary, collision: Dictionary) -> bool:
+	# Grounded AND no longer rising. On the frame the jump fires, the entity is
+	# still flagged on_ground - PhysicsSyncSystem refreshes that later in the
+	# system order - so without the vel.y check a dash-jump would end on the
+	# very frame it began.
+	if collision and collision.on_ground and vel.y >= 0.0:
+		return true
+	if input and input.move_direction != 0 and vel.x != 0.0:
+		return sign(input.move_direction) != sign(vel.x)
+	return false
+
+
+## preserve_speed keeps an already-faster vel.x instead of clamping it back to
+## max_speed, which is what lets a dash-jump hold dash speed through the arc.
+func _apply_input_movement(
+	vel: Dictionary, input: Dictionary, delta: float,
+	speed_scale: float = 1.0, preserve_speed: bool = false
+) -> void:
 	var target_speed = input.move_direction * vel.max_speed * speed_scale
 
 	if input.move_direction != 0:
 		# Accelerate toward target speed
 		if abs(vel.x) < abs(target_speed):
 			vel.x = move_toward(vel.x, target_speed, vel.acceleration * delta)
-		else:
+		elif not preserve_speed:
 			vel.x = target_speed
 
 
@@ -142,7 +171,8 @@ func _apply_dash_movement(
 	var input = get_component(entity_id, "input_state")
 	var direction = input.facing if input else 1
 	vel.x = direction * platformer.dash_speed
-	vel.y = 0  # No vertical movement during dash
+	# vel.y is deliberately left alone: the caller applies gravity, so a dash can
+	# be jumped out of and a dash off a ledge falls rather than hovering.
 
 
 func _update_platformer_timers(platformer: Dictionary, collision: Dictionary, delta: float) -> void:
