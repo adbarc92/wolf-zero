@@ -68,7 +68,7 @@ func _perform_jump(entity_id: int, platformer: Dictionary, vel: Dictionary) -> v
 		platformer.jumps_remaining = max(0, platformer.jumps_remaining - 1)
 
 
-func _perform_wall_jump(entity_id: int, platformer: Dictionary, vel: Dictionary, collision: Dictionary) -> void:
+func _perform_wall_jump(_entity_id: int, platformer: Dictionary, vel: Dictionary, collision: Dictionary) -> void:
 	vel.y = platformer.jump_force
 	vel.x = -collision.wall_direction * vel.max_speed * 0.8  # Push away from wall
 	platformer.is_jumping = true

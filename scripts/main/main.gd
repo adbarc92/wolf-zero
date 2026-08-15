@@ -331,8 +331,14 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 
 func _spawn_boss(position: Vector2, kind: String = "crimson_ronin") -> int:
 	var cfg = {
-		"crimson_ronin": {"name": "Crimson Ronin", "hp": 320, "tint": Color(1.0, 0.25, 0.25), "scale": 1.8, "dmg": 22, "final": false},
-		"oni_warlord":   {"name": "Oni Warlord",   "hp": 480, "tint": Color(0.55, 0.4, 0.7), "scale": 2.3, "dmg": 28, "final": true},
+		"crimson_ronin": {
+			"name": "Crimson Ronin", "hp": 320, "tint": Color(1.0, 0.25, 0.25),
+			"scale": 1.8, "dmg": 22, "final": false,
+		},
+		"oni_warlord": {
+			"name": "Oni Warlord", "hp": 480, "tint": Color(0.55, 0.4, 0.7),
+			"scale": 2.3, "dmg": 28, "final": true,
+		},
 	}.get(kind, {"name": "Boss", "hp": 320, "tint": Color(1,1,1,1), "scale": 1.8, "dmg": 22, "final": true})
 	var node = CharacterBody2D.new()
 	node.name = cfg.name.replace(" ", "")
@@ -572,9 +578,9 @@ func _process_dying(delta: float) -> void:
 
 func _finish_player_death(eid: int) -> void:
 	ECS.remove_component(eid, "dying")
-	var _run_over := GameState.lose_life()
+	var run_over := GameState.lose_life()
 	GameEvents.lives_changed.emit(GameState.lives)
-	if _run_over:
+	if run_over:
 		# Defeated: freeze the field under the DEFEAT overlay.
 		get_tree().paused = true
 		return

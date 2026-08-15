@@ -227,7 +227,8 @@ func _on_threshold_lost(_threshold_name: String) -> void:
 	pass
 
 
-func _flash_momentum_bar(color: Color) -> void:
+# NOTE: the requested colour is ignored - the flash is a fixed white pulse.
+func _flash_momentum_bar(_color: Color) -> void:
 	var tween = create_tween()
 	tween.tween_property(momentum_bar, "modulate", Color(2.0, 2.0, 2.0), 0.1)
 	tween.tween_property(momentum_bar, "modulate", Color.WHITE, 0.2)

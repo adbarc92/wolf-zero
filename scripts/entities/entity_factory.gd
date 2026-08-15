@@ -148,7 +148,9 @@ static func create_echo(ecs: Node, position: Vector2, parent: Node2D, owner_id: 
 # HELPERS
 # =============================================================================
 
-static func _create_character_node(node_name: String, position: Vector2, size: Vector2, color: Color) -> CharacterBody2D:
+static func _create_character_node(
+	node_name: String, position: Vector2, size: Vector2, color: Color
+) -> CharacterBody2D:
 	var node = CharacterBody2D.new()
 	node.name = node_name
 	node.position = position

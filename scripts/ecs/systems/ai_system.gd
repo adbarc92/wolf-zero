@@ -111,7 +111,12 @@ static func support_heal(current: int, max_hp: int, amount: int) -> int:
 	return min(max_hp, current + amount)
 
 
-func _process_chase(entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary, player_pos: Variant, player_id: int, _delta: float) -> void:
+# _player_pos / _player_id are vestigial: chase resolves its target through
+# ai.target_entity, which the caller has already set.
+func _process_chase(
+	entity_id: int, ai: Dictionary, pos: Dictionary, vel: Dictionary,
+	_player_pos: Variant, _player_id: int, _delta: float
+) -> void:
 	var enemy = get_component(entity_id, "enemy")
 	# Aggro: a nearby echo decoy steals the enemy's attention.
 	if ai.can_be_distracted:

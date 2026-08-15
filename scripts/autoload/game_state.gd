@@ -258,7 +258,7 @@ func is_mission_unlocked(mission_id: int) -> bool:
 	if mission_id == 1:
 		return true
 	return mission_progress.get(str(mission_id), {}).get("unlocked", false) or \
-		   mission_progress.get(str(mission_id), {}).get("completed", false)
+		mission_progress.get(str(mission_id), {}).get("completed", false)
 
 
 # =============================================================================
