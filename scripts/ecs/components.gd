@@ -248,6 +248,12 @@ static func parry() -> Dictionary:
 		"cooldown_duration": 0.5,
 		"is_blocking": false,
 		"block_damage_mult": 0.3,
+		# Set by CombatSystem when this parry actually absorbs a hit. ParrySystem
+		# reads it when the window closes to tell a real parry from a whiff.
+		"connected": false,
+		# Momentum spent when a parry window closes without absorbing anything.
+		# A landed parry is free and pays out; mashing is what costs you.
+		"whiff_cost": 15.0,
 		# Momentum spent per blocked hit, as a multiple of the raw damage: a block
 		# pays for the blow in composure as well as chipping health.
 		"block_cost_mult": 1.0,
