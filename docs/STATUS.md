@@ -29,7 +29,13 @@ the art, audio and environment integration all work — closing a validation gap
 that had been open since June. Feet alignment, fog placement and audio balance
 are no longer unknowns.
 
-Content is the bottleneck now, not design and not verification.
+A **whiffed parry now costs 15 Momentum** (PR #30), closing a hole where mashing
+the parry button was free and therefore strictly better than blocking correctly.
+**267/267 tests pass**, CI green on `main` @ `8082a2d`, **zero open PRs**.
+
+Content is the bottleneck now — not design, not verification. **Every design
+question the game needed answered has been answered.** The next session should
+build, not decide.
 
 ### The shipped shape (ADR 0003)
 
@@ -51,7 +57,7 @@ upgrades, and every online co-op service.
 
 | Area | State |
 |---|---|
-| Tests | **258/258 GUT passing** (verified on `main` @ `d31e1a9`) |
+| Tests | **267/267 GUT passing** (verified on `main` @ `8082a2d`) |
 | Headless boot | `main.tscn` boots clean, exit 0 |
 | Import | `--import` clean |
 | CI | Green on `main` (gdlint → import → GUT → boot smoke) |
@@ -100,25 +106,85 @@ upgrades, and every online co-op service.
 
 ### Next steps
 
-1. **Playtest the new combat model.** It shipped verified but unfelt. Does
-   spending Momentum to block read as a real decision? Is a three-parry Break
-   satisfying or a chore? Does starting a fight unable to block teach itself, or
-   just confuse? These are the numbers most likely to need moving, and no test
-   can answer them.
-2. **Decide the level-geometry approach** — code-defined rectangles with the
-   Central City art as decoration, or source/commission a real terrain tileset.
-   Levels 3–6 cannot start without this call.
-3. **Build Levels Three to Six**, with Geisha Network in Level 3 and Iron Daimyo
-   closing Level 6. This is the largest remaining block of work.
-4. **Build the Boss Gauntlet** (FR-GNT-001→015) — reuse only, no bespoke content.
-5. **Build ad-hoc co-op** alongside the Gauntlet, not after it. Local pairing,
-   independent cameras, shared Charge pool, proximity verbs, partner HUD.
-6. Neo-Edo identity art (torii / lanterns / kanji neon) — with the narrative
-   cut, the setting has to land entirely through art, audio and level design.
+> **Decisions are closed.** The next session is a build session. Everything below
+> is settled; nothing here needs another design pass. See "Decisions taken at
+> wrap-up" for the two calls made without the user, both cheap to reverse.
+
+**Next session, in order:**
+
+1. **Playtest the combat model — 20 minutes, before writing any code.** It
+   shipped verified but *unfelt*. Three questions, and no test can answer any of
+   them:
+   - Does spending Momentum to block read as a real decision, or just as chip
+     damage with extra steps?
+   - Is "three parries to Break" a satisfying rhythm or a chore?
+   - Does starting a fight *unable to block* teach itself, or does it just read
+     as broken?
+
+   The likely outcomes are number changes, not design changes. Every value lives
+   in `Components.momentum()` / `Components.parry()`: bank floor 40, Charge cap
+   3, block cost ×1.0, parry drain 34, **whiff cost 15**. Whiff cost is the
+   newest and least-tested — it is the first thing to lower if whiffing feels
+   punishing when you are genuinely trying to read an attack.
+
+2. **Build Level Three.** The largest remaining block of work, and the point of
+   everything that landed today. Geisha Network is its boss (`Requirements.md`
+   §5.1). Use code-defined platform geometry — see the decision below.
+
+3. **Retune arena `trigger_x` distances.** Tuned before the player got ~2× faster
+   (PR #23), and enemies are now optional obstacles rather than gates
+   (`CONTEXT.md`), so the triggers are measuring the wrong thing. Do this
+   *while* building Level Three, not before — Level Three is where you will
+   feel what the right spacing is.
+
+4. **Then, in later sessions:** Levels Four to Six · Boss Gauntlet
+   (FR-GNT-001→015, reuse only) · ad-hoc co-op alongside the Gauntlet rather
+   than after it.
 
 ---
 
 ## Session log
+
+### 2026-08-15 (wrap) — Parry whiff cost; session closed
+
+Closed the last hole in the combat economy and wrapped. `main` @ `8082a2d`,
+CI green, **267/267 tests**, zero open PRs, no branches outstanding.
+
+- **A whiffed parry now costs 15 Momentum** (PR #30). Blocking spent Momentum
+  and parrying did not — and a parry window that closed without absorbing
+  anything was free. Mashing was therefore *strictly better* than defending
+  properly: the precise option cost nothing even when every attempt missed,
+  while the safe option could Break you. Mashing now empties a bar in about
+  three seconds and then Breaks you.
+- Also committed four `.uid` files missing since PR #19, which Godot had been
+  regenerating as untracked on every import. Both swarm lanes noticed them and
+  neither owned them.
+
+#### Decisions taken at wrap-up (made without the user, both cheap to reverse)
+
+1. **Level geometry stays code-defined.** Levels Three to Six use platform
+   rectangles like Levels One and Two, with the Central City art as decoration
+   layered around them — *not* built from tiles.
+
+   The reason is a finding from this session: **the Central City pack is set
+   dressing, not a terrain kit.** `Tiles.png` is 96×144 — a handful of pieces;
+   `Buildings.png` is facades and `Props-01.png` is street clutter. The plan
+   carried since June, "foreground tileset → real level geometry", rested on an
+   asset that does not exist. Code-defined geometry already works, and the
+   combat is what carries the game.
+
+   **Commission a Neo-Edo terrain tileset in parallel.** It is a lead-time item,
+   and it covers the identity pass the docs already call for — the art is still
+   generic cyberpunk, and with the narrative cut the setting has to land through
+   art alone. Starting it early costs nothing; blocking levels on it would.
+
+2. **No `CLAUDE.md` pickup block was added.** The repo has no `CLAUDE.md`, and
+   with everything merged there is no branch for a branch-conditional pointer to
+   key off. This file is the resume surface, and both `README.md` and
+   `CODEBASE-DIGEST.md` already point here.
+
+State delta: combat economy complete and self-consistent; the design backlog is
+empty. The next session builds Level Three.
 
 ### 2026-08-15 (later) — Both lanes merged and integrated
 
