@@ -80,6 +80,13 @@ An obstacle, not a gate. Enemies are **optional** — a skilled player is expect
 to be able to navigate past most of them. Their density and placement are the
 challenge, not a requirement to clear them.
 
+**Elite**
+A durable variant of an existing enemy, tuned to survive long enough for an
+exchange to happen. Elites exist because most of the roster dies in about half a
+second, which leaves the Momentum economy with nothing to act on. Sits between an
+Enemy and a Boss; the Gauntlet is built from Elites and Bosses. "Mini-boss" is
+the older word for the same thing.
+
 ---
 
 ## Co-op
