@@ -2,9 +2,15 @@
 #
 # Run:  uvx --from "gdtoolkit==4.*" gdlint scripts test
 #
-# Only two rules are tuned away from the defaults; everything else is stock.
+# Only three rules are tuned away from the defaults; everything else is stock.
 
 disable:
+  # A GUT test script is one class whose public methods ARE the tests, so any
+  # well-covered suite blows past the default limit of 20 (test_ecs_core has
+  # ~30). gdtoolkit applies one config to the whole tree with no per-path
+  # override, so the choice is disable it or set a limit high enough to be
+  # meaningless for scripts/ too. Disabled, and said out loud.
+  - max-public-methods
   # gdlint wants one fixed global-scope order (signals, enums, consts, exports,
   # pubvars, ...). This codebase instead groups definitions into commented
   # sections by feature, which reads better in the large files (hud.gd, main.gd)

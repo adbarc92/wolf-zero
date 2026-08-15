@@ -10,6 +10,23 @@ env:
   GODOT_VERSION: 4.6.1-stable
 
 jobs:
+  # Runs alongside `verify` rather than gating it: a style finding should not
+  # hide a real test failure. Needs no Godot, so it finishes in seconds.
+  lint:
+    name: gdlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Same command as the local one documented in .gdlintrc.
+      - name: gdlint
+        run: uvx --from "gdtoolkit==4.*" gdlint scripts test
+
   verify:
     name: Import · Tests · Boot
     runs-on: ubuntu-latest
