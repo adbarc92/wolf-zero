@@ -182,7 +182,7 @@ func test_cooldown_never_goes_negative():
 # MOMENTUM
 # =============================================================================
 
-func test_dodging_awards_momentum_when_the_momentum_system_is_present():
+func test_dodging_does_not_build_momentum():
 	ecs.register_system(MomentumSystem.new())
 	var momentum = Components.momentum()
 	ecs.add_component(entity, "momentum", momentum)
@@ -190,7 +190,8 @@ func test_dodging_awards_momentum_when_the_momentum_system_is_present():
 	_press_dodge(true)
 	dodge_system.process(FRAME)
 
-	assert_eq(momentum.current, momentum.gain_dodge, "dodge pays out gain_dodge")
+	assert_eq(momentum.current, 0.0,
+		"only parries and landed attacks build Momentum; a dodge is already paid in i-frames")
 
 
 func test_dodging_without_a_momentum_component_is_harmless():

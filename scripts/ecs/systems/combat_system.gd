@@ -10,6 +10,7 @@ signal entity_damaged(entity_id: int, damage: int, current_hp: int)
 signal entity_died(entity_id: int)
 signal parried(defender_id: int, attacker_id: int)
 signal blocked(defender_id: int, attacker_id: int)
+signal deathblow(attacker_id: int, target_id: int)
 
 
 static func block_damage(raw: int, mult: float) -> int:
@@ -77,13 +78,6 @@ func _start_light_attack(entity_id: int, weapon: Dictionary) -> void:
 
 	attack_started.emit(entity_id, "light_%d" % weapon.combo_current)
 
-	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
-	var momentum_system = ecs.get_system(MomentumSystem)
-	if momentum_system:
-		var momentum = get_component(entity_id, "momentum")
-		if momentum:
-			momentum_system.add_momentum(entity_id, momentum.gain_attack)
-
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
 	var input = get_component(entity_id, "input_state")
@@ -112,13 +106,6 @@ func _start_heavy_attack(entity_id: int, weapon: Dictionary, input: Dictionary) 
 	weapon.combo_timer = 0
 
 	attack_started.emit(entity_id, weapon.attack_type)
-
-	# Add momentum (routed through MomentumSystem so HUD/threshold signals fire)
-	var momentum_system = ecs.get_system(MomentumSystem)
-	if momentum_system:
-		var momentum = get_component(entity_id, "momentum")
-		if momentum:
-			momentum_system.add_momentum(entity_id, momentum.gain_attack)
 
 	# Spawn attack VFX
 	var pos = get_component(entity_id, "position")
@@ -154,7 +141,7 @@ func _process_hitboxes() -> void:
 		var attacker_vel = get_component(attacker_id, "velocity")
 		var attacker_enemy = get_component(attacker_id, "enemy")
 		var facing = resolve_facing(attacker_input, attacker_vel, attacker_enemy)
-		var is_player_team = has_component(attacker_id, "tag_player") or has_component(attacker_id, "tag_echo")
+		var is_player_team = _is_player_team(attacker_id)
 
 		# Check against potential targets
 		var target_tag = "tag_enemy" if is_player_team else "tag_player"
@@ -196,7 +183,34 @@ func _check_hit(attacker_id: int, target_id: int, facing: int) -> bool:
 	return true
 
 
+## Player-team attackers hit enemies; everything else hits the player. Only the
+## player team can land a Deathblow — a Broken player is open to ordinary damage,
+## not to an instant finish.
+func _is_player_team(entity_id: int) -> bool:
+	return has_component(entity_id, "tag_player") or has_component(entity_id, "tag_echo")
+
+
+func _is_broken(entity_id: int) -> bool:
+	var momentum = get_component(entity_id, "momentum")
+	return momentum != null and momentum.broken
+
+
+## Landing an attack builds the attacker's Momentum — aggression is what funds
+## the ability to defend. Routed through MomentumSystem so the HUD keeps up.
+func _gain_on_hit(attacker_id: int) -> void:
+	var momentum = get_component(attacker_id, "momentum")
+	var momentum_system = ecs.get_system(MomentumSystem)
+	if momentum and momentum_system:
+		momentum_system.add_momentum(attacker_id, momentum.gain_attack)
+
+
 func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void:
+	# Deathblow: a Broken target is finished by the next landed attack. There is
+	# no separate input — being open IS the opening.
+	if _is_broken(target_id) and _is_player_team(attacker_id):
+		_apply_deathblow(attacker_id, target_id, weapon)
+		return
+
 	# Parry: a parrying target negates the hit, reflects damage, and staggers the attacker.
 	var target_parry = get_component(target_id, "parry")
 	if target_parry and target_parry.is_parrying and not weapon.get("unblockable", false):
@@ -220,15 +234,22 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 		var mom_sys = ecs.get_system(MomentumSystem)
 		if mom and mom_sys:
 			mom_sys.add_momentum(target_id, mom.gain_parry)
+			# A parry tears composure off the attacker. Enough of them Break it.
+			mom_sys.spend_momentum(attacker_id, mom.parry_drain)
 		parried.emit(target_id, attacker_id)
 		if VFXManager:
 			VFXManager.screen_shake(0.5, 0.15)
 		weapon.hitbox_active = false  # consume the attack
 		return
 
-	# Block: a blocking target takes chip damage, no knockback/stagger, no reflect.
+	# Block: a blocking target spends Momentum to absorb the blow, and takes chip
+	# damage on top. No knockback/stagger, no reflect. Spending the bar to zero
+	# leaves the blocker Broken, which is the cost block never used to have.
 	var target_block = get_component(target_id, "parry")
 	if target_block and target_block.is_blocking and not weapon.get("unblockable", false):
+		var block_sys = ecs.get_system(MomentumSystem)
+		if block_sys:
+			block_sys.spend_momentum(target_id, weapon.damage * target_block.block_cost_mult)
 		var th = get_component(target_id, "health")
 		if th and not th.invincible:
 			var dmg_blocked := block_damage(weapon.damage, target_block.block_damage_mult)
@@ -278,6 +299,7 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 
 	attack_hit.emit(attacker_id, target_id, damage)
 	entity_damaged.emit(target_id, damage, target_health.current)
+	_gain_on_hit(attacker_id)
 
 	# Hit VFX (hitstop, shake, sparks)
 	var target_pos = get_component(target_id, "position")
@@ -291,6 +313,40 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 
 	# Disable hitbox after hit to prevent multi-hit
 	weapon.hitbox_active = false
+
+
+## Finish a Broken target. A regular enemy dies outright, whatever health is
+## left — Breaking something is genuinely faster than wearing it down. A boss
+## instead loses one phase, and only dies to a Deathblow in its final phase.
+func _apply_deathblow(attacker_id: int, target_id: int, weapon: Dictionary) -> void:
+	var health = get_component(target_id, "health")
+	if not health:
+		return
+
+	var boss = get_component(target_id, "boss")
+	var remaining: int = BossSystem.deathblow_health(boss.phase, health.max) if boss else 0
+	var dealt: int = maxi(0, health.current - remaining)
+	health.current = remaining
+
+	weapon.hitbox_active = false  # consume the attack
+	deathblow.emit(attacker_id, target_id)
+	attack_hit.emit(attacker_id, target_id, dealt)
+	entity_damaged.emit(target_id, dealt, health.current)
+	_gain_on_hit(attacker_id)
+
+	# The opening is spent. A boss with a phase left comes back up rather than
+	# being Deathblown twice off one Break.
+	var mom_sys = ecs.get_system(MomentumSystem)
+	if mom_sys:
+		mom_sys.recover(target_id)
+
+	var pos = get_component(target_id, "position")
+	if pos and VFXManager:
+		VFXManager.hit_effect(Vector2(pos.x, pos.y), dealt, true)
+		VFXManager.screen_shake(0.9, 0.25)
+
+	if health.current <= 0:
+		entity_died.emit(target_id)
 
 
 ## Apply damage to an entity from external source

@@ -106,7 +106,12 @@ static func projectile(damage: int = 8, speed: float = 600.0, team: String = "en
 	}
 
 
-## Momentum gauge (combat resource)
+## Momentum gauge: composure, carried by every combatant.
+##
+## Blocking spends it, parries and landed attacks build it, and zero is Broken.
+## These defaults are the player's shape: the bar starts EMPTY and idle-decays,
+## so the opening of a fight has to be offensive because aggression is what funds
+## the ability to defend. Enemies use `enemy_momentum()` instead.
 static func momentum(max_value: float = 100.0) -> Dictionary:
 	return {
 		"current": 0.0,
@@ -115,29 +120,47 @@ static func momentum(max_value: float = 100.0) -> Dictionary:
 		"decay_delay": 2.0,  # Seconds before decay starts
 		"decay_timer": 0.0,
 		"gain_attack": 5.0,
-		"gain_dodge": 10.0,
 		"gain_parry": 15.0,
-		# Thresholds
-		"threshold_echo": 25.0,
-		"threshold_damage": 50.0,
-		"threshold_duration": 75.0,
-		"threshold_ultimate": 100.0,
+		# Momentum torn off an attacker whose blow this entity parries. 34 of 100
+		# means three parries Break any enemy, or end any one boss phase.
+		"parry_drain": 34.0,
+		# Filling the bar banks a Charge and drops back to here, never to zero,
+		# so the best play does not leave the player defenceless.
+		"bank_floor": 40.0,
+		"charges": 0,
+		"charges_max": 3,
+		# Broken: spent down to zero. Staggered, unable to act, and open to a
+		# Deathblow until the timer expires and the bar recovers to bank_floor.
+		"broken": false,
+		"broken_timer": 0.0,
+		"broken_duration": 2.0,
 	}
+
+
+## An enemy's Momentum: full at spawn, no idle decay, and recovering to full.
+##
+## Only the player's parries move it, so Breaking something is always the
+## player's doing rather than something that happens by standing still.
+static func enemy_momentum(max_value: float = 100.0) -> Dictionary:
+	var data := momentum(max_value)
+	data.current = max_value
+	data.decay_rate = 0.0
+	data.bank_floor = max_value
+	data.broken_duration = 2.5  # A slightly wider opening to land the Deathblow
+	return data
 
 
 # =============================================================================
 # ECHO COMPONENTS
 # =============================================================================
 
-## Holographic Echo data
+## Holographic Echo data. Deploying an Echo costs one Charge — that is its only
+## cost and its only gate, so there is no cooldown and no momentum threshold here.
 static func echo_data() -> Dictionary:
 	return {
 		"recording": [],  # Array of recorded frames
 		"max_record_time": 3.0,  # Seconds to record
 		"is_recording": true,
-		"cooldown": 0.0,
-		"cooldown_duration": 8.0,
-		"can_activate": false,  # Requires momentum threshold
 	}
 
 
@@ -225,6 +248,9 @@ static func parry() -> Dictionary:
 		"cooldown_duration": 0.5,
 		"is_blocking": false,
 		"block_damage_mult": 0.3,
+		# Momentum spent per blocked hit, as a multiple of the raw damage: a block
+		# pays for the blow in composure as well as chipping health.
+		"block_cost_mult": 1.0,
 	}
 
 

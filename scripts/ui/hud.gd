@@ -1,7 +1,7 @@
 extends Control
 ## HUD - Heads Up Display
 ##
-## Displays health, momentum, echo cooldown, and combo counter.
+## Displays health, momentum, banked Charges, and combo counter.
 ## Subscribes to GameEvents for updates.
 
 # =============================================================================
@@ -22,6 +22,9 @@ extends Control
 
 # Lives label (built in code, near the health bar)
 var _lives_label: Label
+
+# Charge pool readout (built in code, under the lives label)
+var _charges_label: Label
 
 # Boss bar (built in code, top-center, hidden unless a boss is active)
 var _boss_container: Control
@@ -44,9 +47,10 @@ var _target_health_width: float = 250.0
 
 var _current_momentum: float = 0.0
 var _max_momentum: float = 100.0
+var _broken: bool = false
 
-var _echo_cooldown_remaining: float = 0.0
-var _echo_cooldown_total: float = 8.0
+var _charges: int = 0
+var _max_charges: int = 3
 var _echo_ready: bool = false
 
 var _combo_count: int = 0
@@ -61,11 +65,12 @@ var _damage_bar_speed: float = 100.0
 const COLOR_HEALTH = Color(0.0, 0.9, 0.8, 1.0)
 const COLOR_HEALTH_LOW = Color(1.0, 0.3, 0.2, 1.0)
 const COLOR_MOMENTUM_BASE = Color(1.0, 0.4, 0.8, 1.0)
-const COLOR_MOMENTUM_ECHO = Color(0.0, 0.8, 1.0, 1.0)
-const COLOR_MOMENTUM_DAMAGE = Color(1.0, 0.6, 0.2, 1.0)
-const COLOR_MOMENTUM_ULTIMATE = Color(1.0, 0.9, 0.3, 1.0)
+## Near the top of the bar: a Charge is about to bank.
+const COLOR_MOMENTUM_FULL = Color(1.0, 0.9, 0.3, 1.0)
+## Broken: spent to zero, staggered and open.
+const COLOR_MOMENTUM_BROKEN = Color(1.0, 0.2, 0.15, 1.0)
 const COLOR_ECHO_READY = Color(0.0, 1.0, 1.0, 1.0)
-const COLOR_ECHO_COOLDOWN = Color(0.3, 0.3, 0.4, 1.0)
+const COLOR_ECHO_EMPTY = Color(0.3, 0.3, 0.4, 1.0)
 
 
 const COLOR_BOSS_BG = Color(0.12, 0.04, 0.06, 0.85)
@@ -75,6 +80,7 @@ const COLOR_BOSS_FILL = Color(1.0, 0.2, 0.25, 1.0)
 func _ready() -> void:
 	_build_boss_bar()
 	_build_lives_label()
+	_build_charges_label()
 	_connect_signals()
 	# Deferred so bar sizes are applied after the initial layout pass
 	# (avoids "anchors will override size after _ready" warnings).
@@ -91,19 +97,16 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_update_damage_bar(delta)
 	_update_combo_timer(delta)
-	_update_echo_cooldown_display()
 
 
 func _connect_signals() -> void:
 	GameEvents.ui_update_health.connect(_on_health_updated)
 	GameEvents.ui_update_momentum.connect(_on_momentum_updated)
-	GameEvents.ui_update_echo_cooldown.connect(_on_echo_cooldown_updated)
 	GameEvents.ui_show_damage_number.connect(_on_show_damage_number)
 
-	GameEvents.momentum_threshold_echo_reached.connect(_on_echo_threshold_reached)
-	GameEvents.momentum_threshold_damage_reached.connect(_on_damage_threshold_reached)
-	GameEvents.momentum_threshold_ultimate_reached.connect(_on_ultimate_threshold_reached)
-	GameEvents.momentum_threshold_lost.connect(_on_threshold_lost)
+	GameEvents.charges_changed.connect(_on_charges_changed)
+	GameEvents.momentum_broken.connect(_on_momentum_broken)
+	GameEvents.momentum_recovered.connect(_on_momentum_recovered)
 
 	GameEvents.echo_activated.connect(_on_echo_activated)
 	GameEvents.echo_ready.connect(_on_echo_ready)
@@ -194,90 +197,90 @@ func _on_momentum_updated(current: float, max_val: float) -> void:
 	momentum_bar.size.x = bar_width
 	momentum_bar.position.x = (_momentum_bar_width - bar_width) / 2
 
-	# Update color based on thresholds
 	_update_momentum_color(percent)
 
 
 func _update_momentum_color(percent: float) -> void:
-	if percent >= 1.0:
-		momentum_bar.color = COLOR_MOMENTUM_ULTIMATE
-	elif percent >= 0.5:
-		momentum_bar.color = COLOR_MOMENTUM_DAMAGE
-	elif percent >= 0.25:
-		momentum_bar.color = COLOR_MOMENTUM_ECHO
+	if _broken:
+		momentum_bar.color = COLOR_MOMENTUM_BROKEN
+	elif percent >= 0.8:
+		momentum_bar.color = COLOR_MOMENTUM_FULL
 	else:
 		momentum_bar.color = COLOR_MOMENTUM_BASE
 
 
-func _on_echo_threshold_reached() -> void:
-	_flash_momentum_bar(COLOR_MOMENTUM_ECHO)
+func _on_momentum_broken() -> void:
+	_broken = true
+	_update_momentum_color(0.0)
+	_flash_momentum_bar()
 
 
-func _on_damage_threshold_reached() -> void:
-	_flash_momentum_bar(COLOR_MOMENTUM_DAMAGE)
+func _on_momentum_recovered() -> void:
+	_broken = false
 
 
-func _on_ultimate_threshold_reached() -> void:
-	_flash_momentum_bar(COLOR_MOMENTUM_ULTIMATE)
-	_show_ultimate_ready()
-
-
-func _on_threshold_lost(_threshold_name: String) -> void:
-	# Could add visual feedback for losing threshold
-	pass
-
-
-# NOTE: the requested colour is ignored - the flash is a fixed white pulse.
-func _flash_momentum_bar(_color: Color) -> void:
+func _flash_momentum_bar() -> void:
 	var tween = create_tween()
 	tween.tween_property(momentum_bar, "modulate", Color(2.0, 2.0, 2.0), 0.1)
 	tween.tween_property(momentum_bar, "modulate", Color.WHITE, 0.2)
 
 
-func _show_ultimate_ready() -> void:
-	# Could show "ULTIMATE READY" text
-	pass
-
-
 # =============================================================================
-# ECHO COOLDOWN
+# CHARGES
 # =============================================================================
 
-func _on_echo_cooldown_updated(remaining: float, total: float) -> void:
-	_echo_cooldown_remaining = remaining
-	_echo_cooldown_total = total
-	_echo_ready = remaining <= 0
+static func charges_text(charges: int, max_charges: int) -> String:
+	return "CHARGE  %d / %d" % [charges, max_charges]
 
 
-func _update_echo_cooldown_display() -> void:
-	if _echo_cooldown_total <= 0:
-		return
+func _build_charges_label() -> void:
+	var label := Label.new()
+	label.name = "ChargesLabel"
+	# Directly under the lives label, in the same top-left cluster.
+	label.position = Vector2(24.0, 86.0)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_color", COLOR_ECHO_READY)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_font_size_override("font_size", 16)
+	label.text = charges_text(0, _max_charges)
+	add_child(label)
+	_charges_label = label
 
-	if _echo_ready:
-		echo_cooldown.size.y = _echo_bar_height
-		echo_cooldown.offset_top = -_echo_bar_height
-		echo_cooldown.color = COLOR_ECHO_READY
-		echo_icon.modulate = COLOR_ECHO_READY
-	else:
-		var percent = 1.0 - (_echo_cooldown_remaining / _echo_cooldown_total)
-		var fill_height = _echo_bar_height * percent
-		echo_cooldown.size.y = fill_height
-		echo_cooldown.offset_top = -fill_height
-		echo_cooldown.color = COLOR_ECHO_COOLDOWN
-		echo_icon.modulate = COLOR_ECHO_COOLDOWN
+
+func _on_charges_changed(charges: int, max_charges: int) -> void:
+	_charges = charges
+	_max_charges = max_charges
+	_echo_ready = charges > 0
+
+	if _charges_label:
+		_charges_label.text = charges_text(charges, max_charges)
+		_charges_label.modulate = COLOR_ECHO_READY if _echo_ready else COLOR_ECHO_EMPTY
+
+	_update_echo_display()
+
+
+## The Charge pool is Echo's only gate, so the indicator is simply lit or dark —
+## there is no cooldown left to fill up.
+func _update_echo_display() -> void:
+	echo_cooldown.size.y = _echo_bar_height
+	echo_cooldown.offset_top = -_echo_bar_height
+	var tint: Color = COLOR_ECHO_READY if _echo_ready else COLOR_ECHO_EMPTY
+	echo_cooldown.color = tint
+	echo_icon.modulate = tint
 
 
 func _on_echo_activated() -> void:
 	# Flash the echo icon
 	var tween = create_tween()
 	tween.tween_property(echo_icon, "modulate", Color.WHITE, 0.05)
-	tween.tween_property(echo_icon, "modulate", COLOR_ECHO_COOLDOWN, 0.1)
-
-	_echo_ready = false
+	tween.tween_property(echo_icon, "modulate", COLOR_ECHO_EMPTY, 0.1)
 
 
 func _on_echo_ready() -> void:
 	_echo_ready = true
+	_update_echo_display()
 	# Pulse effect
 	var tween = create_tween()
 	tween.tween_property(echo_icon, "scale", Vector2(1.3, 1.3), 0.1)
@@ -286,6 +289,7 @@ func _on_echo_ready() -> void:
 
 func _on_echo_not_ready() -> void:
 	_echo_ready = false
+	_update_echo_display()
 
 
 # =============================================================================

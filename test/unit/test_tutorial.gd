@@ -45,9 +45,10 @@ func test_all_shown_only_after_every_prompt():
 	assert_false(s.all_shown(), "nothing shown yet")
 	s.request(TutorialScript.PROMPT_MOMENTUM)
 	s.request(TutorialScript.PROMPT_ECHO)
-	assert_false(s.all_shown(), "parry still pending")
+	assert_false(s.all_shown(), "parry and Broken still pending")
 	s.request(TutorialScript.PROMPT_PARRY)
-	assert_true(s.all_shown(), "all three mechanics taught")
+	s.request(TutorialScript.PROMPT_BROKEN)
+	assert_true(s.all_shown(), "all four mechanics taught")
 
 
 # --- trigger map (event -> mechanic) ----------------------------------------
@@ -62,8 +63,14 @@ func test_momentum_changed_at_zero_does_not_trigger():
 		"zero/initial momentum should not teach anything")
 
 
-func test_echo_threshold_maps_to_echo():
-	assert_eq(TutorialScript.prompt_for_echo_threshold(), TutorialScript.PROMPT_ECHO)
+func test_banking_a_charge_maps_to_echo():
+	assert_eq(TutorialScript.prompt_for_charges_changed(1), TutorialScript.PROMPT_ECHO,
+		"holding a Charge is the moment Echo becomes real")
+
+
+func test_an_emptied_charge_pool_teaches_nothing():
+	assert_eq(TutorialScript.prompt_for_charges_changed(0), "",
+		"spending the last Charge is not a teaching moment")
 
 
 func test_player_damaged_maps_to_parry():
@@ -71,10 +78,18 @@ func test_player_damaged_maps_to_parry():
 		"first hit teaches parry")
 
 
+func test_broken_maps_to_broken():
+	assert_eq(TutorialScript.prompt_for_broken(), TutorialScript.PROMPT_BROKEN,
+		"being Broken teaches what blocking costs")
+
+
 # --- copy is present and short ----------------------------------------------
 
 func test_every_prompt_has_copy():
-	for id in [TutorialScript.PROMPT_MOMENTUM, TutorialScript.PROMPT_ECHO, TutorialScript.PROMPT_PARRY]:
+	for id in [
+		TutorialScript.PROMPT_MOMENTUM, TutorialScript.PROMPT_ECHO,
+		TutorialScript.PROMPT_PARRY, TutorialScript.PROMPT_BROKEN,
+	]:
 		assert_true(TutorialScript.COPY.has(id), "%s has copy" % id)
 		assert_true(TutorialScript.COPY[id].length() > 0, "%s copy non-empty" % id)
 		assert_true(TutorialScript.COPY[id].length() <= 60, "%s copy stays short" % id)

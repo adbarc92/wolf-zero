@@ -5,6 +5,9 @@ extends ECSSystem
 
 signal boss_phase_changed(entity_id: int, phase: int)
 
+## Bosses run two phases, split at half health by `phase_for_hp`.
+const PHASE_MAX := 2
+
 
 func _get_required_components() -> Array[String]:
 	return ["boss", "position"]
@@ -12,6 +15,15 @@ func _get_required_components() -> Array[String]:
 
 static func phase_for_hp(current: int, max_hp: int) -> int:
 	return 2 if float(current) <= float(max_hp) * 0.5 else 1
+
+
+## Health left on a boss whose `phase` a Deathblow has just ended: the top of the
+## next phase band, or nothing at all when the phase being ended is the last one.
+## Phase therefore stays a pure function of health and needs no extra bookkeeping.
+static func deathblow_health(phase: int, max_hp: int) -> int:
+	if phase >= PHASE_MAX:
+		return 0
+	return int(float(max_hp) * 0.5)
 
 static func patterns_for_phase(phase: int) -> Array:
 	if phase >= 2:

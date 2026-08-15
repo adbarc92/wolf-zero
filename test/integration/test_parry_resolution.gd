@@ -4,6 +4,7 @@ var ECSScript = preload("res://scripts/ecs/ecs.gd")
 
 func test_parry_negates_damage_reflects_and_staggers():
 	var ecs = ECSScript.new(); add_child_autofree(ecs)
+	var momentum := MomentumSystem.new(); ecs.register_system(momentum)
 	var combat := CombatSystem.new(); ecs.register_system(combat)
 
 	var p = ecs.create_entity()
@@ -21,6 +22,7 @@ func test_parry_negates_damage_reflects_and_staggers():
 	ecs.add_component(e, "position", Components.position(20, 0))
 	ecs.add_component(e, "velocity", Components.velocity())
 	ecs.add_component(e, "health", Components.health(50))
+	ecs.add_component(e, "momentum", Components.enemy_momentum())
 	var enemy = Components.enemy("ronin_drone"); enemy.facing = -1
 	ecs.add_component(e, "enemy", enemy)
 	var ai_c = Components.ai("chase"); ai_c.state = "attack"
@@ -36,3 +38,8 @@ func test_parry_negates_damage_reflects_and_staggers():
 	assert_eq(ecs.get_component(p, "health").current, player_hp, "parry negates player damage")
 	assert_lt(ecs.get_component(e, "health").current, enemy_hp, "parry reflects damage to attacker")
 	assert_eq(ecs.get_component(e, "ai").state, "stagger", "attacker is staggered")
+
+	var pm = ecs.get_component(p, "momentum")
+	var em = ecs.get_component(e, "momentum")
+	assert_almost_eq(pm.current, pm.gain_parry, 0.001, "parrying builds the defender's Momentum")
+	assert_almost_eq(em.current, em.max - pm.parry_drain, 0.001, "and drains the attacker's")
