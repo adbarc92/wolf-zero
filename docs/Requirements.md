@@ -167,15 +167,26 @@ the auto-revive (§9.2). Those are not waiting in the Idea Bank; they are gone.
 | ID | Requirement | Priority | Status | Launch |
 |----|-------------|----------|--------|--------|
 | FR-MOM-001 | System shall track player momentum as a 0-100% gauge | P0 | Complete | Ship |
-| FR-MOM-002 | Momentum shall increase from successful attacks | P0 | Complete | Ship |
-| FR-MOM-003 | Momentum shall increase from successful dodges | P0 | Complete | Ship |
+| FR-MOM-002 | Momentum shall increase from **landing** an attack, not from swinging | P0 | Complete | Ship |
+| FR-MOM-003 | Momentum shall increase from successful dodges | — | Complete | Removed |
 | FR-MOM-004 | Momentum shall increase from successful parries | P0 | Complete | Ship |
-| FR-MOM-005 | Momentum shall decay slowly when not in combat | P0 | Complete | Ship |
+| FR-MOM-005 | Momentum shall decay slowly when not in combat | P0 | Complete | Ship — player only; enemy Momentum does not decay (FR-MOM-015) |
 | FR-MOM-006 | At 25% momentum, Echo abilities shall unlock | — | Complete | Removed |
 | FR-MOM-007 | At 50% momentum, attack damage shall increase by 20% | — | Complete | Removed |
 | FR-MOM-008 | At 75% momentum, Echo duration shall extend | — | In Progress — threshold fires, no effect wired | Removed |
 | FR-MOM-009 | At 100% momentum, ultimate attack shall become available | P3 | Draft — **threshold fires and nothing happens** | Parked |
 | FR-MOM-010 | Ultimate attack shall consume all momentum when used | P3 | Draft | Parked |
+| FR-MOM-011 | Blocking shall spend Momentum equal to the raw incoming damage | P0 | Complete | Ship |
+| FR-MOM-012 | Momentum reaching zero shall Break the combatant: staggered, unable to act, open | P0 | Complete | Ship |
+| FR-MOM-013 | Filling the bar shall bank a Charge and reset Momentum to a partial floor, never zero | P0 | Complete | Ship |
+| FR-MOM-014 | Charges shall accumulate in a capped, non-decaying pool | P0 | Complete | Ship |
+| FR-MOM-015 | Enemies shall carry Momentum that starts full and is moved only by the player's parries | P0 | Complete | Ship |
+
+> **Implemented 2026-08-15** (PR #28). Chosen values: bank floor **40/100**, Charge
+> cap **3**, block cost **raw damage × 1.0**, parry drain **34** (so exactly three
+> parries Break any enemy), Broken duration **2.0s** player / **2.5s** enemy.
+> FR-MOM-003 is `Removed`: dodge is already paid for in i-frames, and its old +10
+> undercut parry's +15.
 
 #### 2.1.4 Holographic Echo System
 
@@ -198,7 +209,7 @@ the auto-revive (§9.2). Those are not waiting in the Idea Bank; they are gone.
 | FR-ECH-009 | Echo shall be able to activate pressure plates | P3 | Draft — blocked on FR-INT-001 | Parked |
 | FR-ECH-010 | Echo shall be visually distinct (translucent cyan, scan-lines) | P0 | Complete | Ship |
 | FR-ECH-011 | Extended Memory upgrade shall increase recording to 4 seconds | P3 | Draft — save field exists, no unlock path | Parked |
-| FR-ECH-012 | Rapid Recall upgrade shall reduce cooldown to 6 seconds | P3 | Draft — save field exists, no unlock path | Parked |
+| FR-ECH-012 | Rapid Recall upgrade shall reduce cooldown to 6 seconds | — | Draft | Removed — there is no cooldown left to reduce (ADR 0001) |
 | FR-ECH-013 | Solid Echo upgrade shall enable physical object interaction | P3 | Draft — save field exists, no unlock path | Parked |
 | FR-ECH-014 | Dual Echo upgrade shall allow two simultaneous Echoes | P3 | Draft — save field exists, no unlock path | Parked |
 | FR-ECH-015 | Persistent Echo upgrade shall extend duration to 5 seconds | P3 | Draft — save field exists, no unlock path | Parked |
@@ -272,6 +283,13 @@ the auto-revive (§9.2). Those are not waiting in the Idea Bank; they are gone.
 | FR-BOS-007 | Bosses shall have clearly telegraphed vulnerable windows | P0 | Complete | Ship |
 | FR-BOS-008 | Elite / mini-boss enemies shall appear in mid-level arenas and in the Gauntlet | P1 | Draft | Ship |
 | FR-BOS-009 | Oni Warlord: perilous-heavy final boss, gates the win | P0 | Complete — built, previously unspecified | Ship |
+| FR-BOS-010 | A Deathblow on a Broken boss shall end exactly one phase; in the final phase it shall kill | P0 | Complete | Ship |
+
+> FR-BOS-010 implemented 2026-08-15 (PR #28). Phase remains a pure function of
+> health, so a Deathblow works by dropping the boss to the next phase threshold
+> rather than by adding separate bookkeeping. ⚠️ The implementation assumes
+> **exactly two phases** (`BossSystem.PHASE_MAX = 2`); a three-phase boss requires
+> changing `deathblow_health` and `phase_for_hp` together.
 
 #### 2.2.3 Enemy AI
 | ID | Requirement | Priority | Status | Launch |
@@ -574,19 +592,23 @@ the auto-revive (§9.2). Those are not waiting in the Idea Bank; they are gone.
 | FR-DEF-004 | A successful parry shall reflect damage to the attacker | P0 | Complete | Ship |
 | FR-DEF-005 | A successful parry shall stagger the attacker (1.0s, 1.4s bosses) | P0 | Complete | Ship |
 | FR-DEF-006 | A successful parry shall award momentum | P0 | Complete | Ship |
-| FR-DEF-007 | Blocking shall reduce incoming damage to 30% chip | P0 | Complete | Ship |
+| FR-DEF-007 | Blocking shall reduce incoming damage to 30% chip **and** spend Momentum equal to the raw damage (FR-MOM-011) | P0 | Complete | Ship |
 | FR-DEF-008 | Blocking shall prevent knockback and stagger | P0 | Complete | Ship |
 | FR-DEF-009 | Blocking shall reduce movement speed to 15% | P0 | Complete | Ship |
 | FR-DEF-010 | Perilous (unblockable) attacks shall bypass both parry and block | P0 | Complete | Ship |
 | FR-DEF-011 | Perilous attacks shall be avoidable only by dodge i-frames | P0 | Complete | Ship |
 | FR-DEF-012 | Perilous attacks shall carry a distinct visual tell | P0 | In Progress — tint flash; readability unverified | Ship |
-| FR-DEF-013 | Defence shall operate on a posture economy, not health chip | P0 | **Draft — decided by ADR 0001, implementation in flight. See §9.7** | Ship |
+| FR-DEF-013 | Defence shall run on the Momentum economy: blocking spends it, zero Breaks you | P0 | Complete | Ship |
+| FR-DEF-014 | A Deathblow on a Broken regular enemy shall kill it outright, whatever health remains | P0 | Complete | Ship |
 
-> [ADR 0001](adr/0001-momentum-absorbs-posture.md) answers FR-DEF-013: **Momentum
-> absorbs posture — there is one bar, and blocking spends it.** FR-DEF-007/009
-> (30% chip, 15% move speed) describe the pre-ADR build and will change with the
-> implementation; their build statuses are left untouched here so that the
-> implementing lane owns them.
+> **Implemented 2026-08-15** (PR #28). [ADR 0001](adr/0001-momentum-absorbs-posture.md)
+> answered FR-DEF-013 — **Momentum absorbs posture; there is one bar and blocking
+> spends it** — and the implementation followed the same day. FR-DEF-007 now
+> records both costs of a block. Chip damage survives *alongside* the Momentum
+> cost, because `CONTEXT.md` defines Block as reducing damage rather than negating
+> it. The Deathblow is automatic: any landed attack on a Broken target triggers
+> it, and it is gated to the player's team, so a Broken player is exposed to
+> ordinary damage rather than to instant death.
 
 ### 2.11 Boss Gauntlet (repeatable mode)
 
@@ -986,10 +1008,10 @@ it.
 ```
 TR-ARC-* → TR-SYS-* → TR-CMP-*        [DONE]
     ↓
-FR-MOV-* → FR-CMB-* → FR-MOM-*        [DONE, being reworked by ADR 0001]
+FR-MOV-* → FR-CMB-* → FR-MOM-*        [DONE, reworked by ADR 0001]
     ↓
-FR-DEF-013 (Momentum absorbs posture) [<-- IN FLIGHT: gates Gauntlet scoring
-    ↓                                      and every co-op proximity verb]
+FR-DEF-013 (Momentum absorbs posture) [DONE 2026-08-15 — unblocks Gauntlet
+    ↓                                   scoring and every co-op proximity verb]
 CR-MSN-003 → FR-BOS-002/003           [<-- THE CONTENT BOTTLENECK: 4 levels,
     ↓                                      2 bosses]
 FR-GNT-*  +  FR-COP-*                 [BLOCKED on both of the above]
