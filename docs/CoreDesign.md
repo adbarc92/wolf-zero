@@ -4,11 +4,30 @@
 
 **Wolf-Zero** is a 2D side-scrolling hack-and-slash game with platforming elements, set in Neo Edo—a cyberpunk reimagining of feudal Japan. The game targets mobile platforms (iOS/Android) as primary, with Steam as secondary. Designed for 10-20 minute play sessions, it features gesture-based combat, a unique Holographic Echo time mechanic, and optional co-op multiplayer.
 
-**Core Pillars:**
-1. **Fluid Combat** — Fast, responsive hack-and-slash with momentum-based combos
-2. **Holographic Echo** — Signature time manipulation mechanic for combat and puzzles
-3. **Session-Friendly** — Discrete missions designed for commuter play
-4. **Neo Edo Atmosphere** — Distinctive cyberpunk-feudal aesthetic fusion
+**Core Pillars** *(restated 2026-08-15 — see the note below)*:
+1. **X-Class Mobility** — Mega Man X traversal: dash, dash-jump, wall-kick, ~1-frame response
+2. **Sekiro-Class Defence** — Defence is the conceit. Timing, not attrition, decides fights
+3. **Ad-Hoc Co-op** — Device-to-device play is core to the product, not a bonus mode
+4. **Session-Friendly** — Short, restart-cheap runs designed for commuter play
+5. **Neo Edo Atmosphere** — Distinctive cyberpunk-feudal aesthetic fusion
+
+> ⚠️ **Pillar revision, 2026-08-15.** The formula is **Mega Man X + Sekiro, with
+> ad-hoc co-op at the core.** This supersedes the Katana Zero framing used
+> throughout the rest of this document.
+>
+> Two consequences the body text has **not** yet been rewritten for:
+>
+> - **Sekiro, not Katana Zero**, means defence should run on a **posture
+>   economy** — blocking drains posture rather than health, a well-timed block
+>   deflects and damages the *enemy's* posture, and a posture break opens a
+>   deathblow. The build currently has stagger but no posture meter; block is a
+>   flat 30% HP chip. See `Requirements.md` FR-DEF-013 and §9.7.
+> - **Co-op is core**, which contradicts §6.1 below ("never required") and the
+>   P1/P2 priorities in `Requirements.md` §2.5. See §9.5.
+>
+> The Holographic Echo was pillar #2 in v1.0 and is now unlisted. Whether it
+> remains the signature mechanic, becomes a co-op verb, or is cut is an open
+> question — it is the most-built system with the least clear role.
 
 ---
 
@@ -17,9 +36,13 @@
 ### 1.1 Genre & Inspirations
 - **Genre:** 2D Side-scrolling Hack-and-Slash / Action Platformer
 - **Primary Inspirations:**
-  - *Katana Zero* — Tight combat, time manipulation, stylish presentation
+  - *Mega Man X (X4-X6)* — Dash-centric traversal, instant response, boss gauntlets
+  - *Sekiro* — Posture-based defence; deflect and break rather than whittle down
   - *Ninja Gaiden* — Technical precision, challenging combat
   - *Dead Cells* — Mobile-friendly action, satisfying progression
+
+  *Katana Zero* was the v1.0 reference and has been retired: it implies one-hit
+  lethality and time manipulation, which is not the direction.
 
 ### 1.2 Target Platforms
 | Platform | Priority | Notes |
@@ -303,6 +326,14 @@ For players preferring traditional mobile controls:
 ## 6. Co-op System
 
 ### 6.1 Design Philosophy
+
+> ⚠️ **Contradicts the 2026-08-15 pillars.** The text below is the v1.0 position.
+> The stated vision is that **ad-hoc co-op is core to the product**. "Enhances
+> but never required" and "core" are not the same design, and they imply
+> different level layouts, different encounter design, and a different
+> networking priority. Unresolved — see `Requirements.md` §9.5.
+
+*(v1.0 position, retained pending the decision:)*
 Co-op enhances the experience but is never required. All content is completable solo.
 
 ### 6.2 Co-op Modes
