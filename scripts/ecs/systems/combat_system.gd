@@ -230,6 +230,9 @@ func _apply_damage(attacker_id: int, target_id: int, weapon: Dictionary) -> void
 		if atk_boss:
 			atk_boss.staggered = true
 			atk_boss.stagger_timer = 1.4
+		# Mark the window as having done its job, so ParrySystem doesn't bill it
+		# as a whiff when it closes.
+		target_parry.connected = true
 		var mom = get_component(target_id, "momentum")
 		var mom_sys = ecs.get_system(MomentumSystem)
 		if mom and mom_sys:
