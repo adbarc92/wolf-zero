@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.6.1-stable
+
+jobs:
+  verify:
+    name: Import · Tests · Boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot binary
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot ${{ env.GODOT_VERSION }}
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p ~/godot
+          url="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          curl -fsSL -o /tmp/godot.zip "$url"
+          unzip -q -o /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}_linux.x86_64 ~/godot/godot
+          chmod +x ~/godot/godot
+
+      - name: Godot version
+        run: ~/godot/godot --headless --version
+
+      # Populates .godot/ (import cache). Godot can exit non-zero on the first
+      # pass while it is still generating the cache, so the second pass is the
+      # one that must be clean.
+      - name: Import resources
+        run: |
+          set -uo pipefail
+          ~/godot/godot --headless --path . --import >/tmp/import1.log 2>&1 || true
+          ~/godot/godot --headless --path . --import 2>&1 | tee /tmp/import.log
+          if grep -qE '^(ERROR|SCRIPT ERROR|USER ERROR)' /tmp/import.log; then
+            echo "::error::Import produced errors"
+            exit 1
+          fi
+
+      - name: GUT test suite
+        run: |
+          set -uo pipefail
+          ~/godot/godot --headless --path . \
+            -s res://addons/gut/gut_cmdln.gd \
+            -gconfig=res://.gutconfig.json 2>&1 | tee /tmp/gut.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "::error::GUT exited with $status"
+            exit "$status"
+          fi
+          if ! grep -q -- '---- All tests passed! ----' /tmp/gut.log; then
+            echo "::error::GUT did not report an all-pass summary"
+            exit 1
+          fi
+
+      # Boots the real main scene for ~150 frames. Godot exits 0 even when the
+      # scene tree logs script errors, so the log is what gates this step.
+      - name: Boot smoke test
+        run: |
+          set -uo pipefail
+          ~/godot/godot --headless --path . res://scenes/main/main.tscn \
+            --quit-after 150 2>&1 | tee /tmp/boot.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "::error::main.tscn boot exited with $status"
+            exit "$status"
+          fi
+          if grep -qE '^(ERROR|SCRIPT ERROR|USER ERROR)' /tmp/boot.log; then
+            echo "::error::main.tscn boot logged errors"
+            exit 1
+          fi
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-logs
+          path: /tmp/*.log
+          if-no-files-found: ignore
