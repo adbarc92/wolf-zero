@@ -62,6 +62,14 @@ func _perform_jump(entity_id: int, platformer: Dictionary, vel: Dictionary) -> v
 	vel.y = platformer.jump_force
 	platformer.is_jumping = true
 
+	# Dash-jump: jumping out of a dash ends the dash but hands its horizontal
+	# speed to the jump arc, which MovementSystem then preserves. This runs
+	# before MovementSystem in the system order, so the dash branch there is
+	# already skipped on this frame and vel.y survives.
+	if platformer.get("is_dashing", false):
+		platformer.is_dashing = false
+		platformer.dash_jumping = true
+
 	# Consume a jump if in air
 	var collision = get_component(entity_id, "collision")
 	if collision and not collision.on_ground:
