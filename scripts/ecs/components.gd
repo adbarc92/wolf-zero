@@ -198,16 +198,9 @@ static func platformer(jump_force: float = -600.0) -> Dictionary:
 		"has_grapple": false,
 		"has_air_dash": false,
 		"dash_cooldown": 0.0,
-		# Time re-armed onto dash_cooldown after a dash. The player overrides this
-		# to a near-zero value so dash reads as a movement verb, not a resource.
-		"dash_cooldown_time": 0.6,
 		"dash_duration": 0.2,
 		"dash_speed": 800.0,
 		"is_dashing": false,
-		# Set when a jump leaves the ground mid-dash. While true, MovementSystem
-		# preserves the dash's horizontal speed for the arc instead of clamping
-		# back to max_speed. Cleared on landing or on steering the other way.
-		"dash_jumping": false,
 		"is_sliding": false,
 		"slide_timer": 0.0,
 		"slide_duration": 0.35,
