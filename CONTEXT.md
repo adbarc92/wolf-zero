@@ -13,11 +13,19 @@ Composure. The single combat meter, carried by every combatant. High Momentum
 means in control; zero means Broken. It is both the offensive rhythm gauge and
 Wolf Zero's expression of what Sekiro calls *posture* — there is only one bar.
 
-Momentum decays over time when not fighting. It **starts empty**, so the opening
-of a fight must be offensive: aggression is what funds the ability to defend.
-Blocking spends it. Parrying and landing attacks build it. Filling it completely
-banks a Charge and drops it back to a partial floor, never to zero — the player
-is not left defenceless immediately after their best play.
+The two sides are **not symmetrical**, and the asymmetry is the point — Breaking
+something is the player's doing.
+
+The **player's** Momentum starts **empty** and decays toward empty when not
+fighting, so the opening of a fight must be offensive: aggression is what funds
+the ability to defend. Blocking spends it. Parrying and landing attacks build it.
+Filling it completely banks a Charge and drops it back to a partial floor, never
+to zero — the player is not left defenceless immediately after their best play.
+
+An **enemy's** Momentum starts **full** and does not decay. Only the player's
+parries move it, and only downward. It has to start full, or parries would have
+nothing to drain and every enemy would spawn already Broken; it must not decay,
+or an enemy could be Broken by waiting, which inverts the entire mechanic.
 
 **Broken**
 The state of a combatant whose Momentum has reached zero: Staggered, unable to

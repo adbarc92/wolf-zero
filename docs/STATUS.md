@@ -19,14 +19,17 @@ co-op that is solo-complete. Skill trees, the three-currency economy, the four
 extra weapons and the twelve-mission narrative are **out of launch scope** and
 parked in [`IDEA-BANK.md`](IDEA-BANK.md) — not deleted, not being built.
 
-The build itself is still the two-level vertical slice: **233/233 tests pass**,
-it boots clean headless, and **no human has ever looked at it**. That last point
-has been true for two months and is still the highest-value thing anyone could
-do with an hour.
+The **ADR 0001 combat rework has landed** (PR #28). Momentum now absorbs posture:
+one bar, blocking spends it, zero Breaks you, a full bar banks a Charge, and
+Breaking an enemy opens a Deathblow that kills outright or takes a phase off a
+boss. Echo costs a Charge and has no cooldown. **258/258 tests pass**, CI green.
 
-Two things are in flight right now: the **ADR 0001 combat rework** (Momentum
-absorbs posture; a full bar banks a Charge) and this **documentation scope
-pass**, running as parallel lanes.
+**The build has been played.** On 2026-08-15 a human launched it and confirmed
+the art, audio and environment integration all work — closing a validation gap
+that had been open since June. Feet alignment, fog placement and audio balance
+are no longer unknowns.
+
+Content is the bottleneck now, not design and not verification.
 
 ### The shipped shape (ADR 0003)
 
@@ -48,30 +51,36 @@ upgrades, and every online co-op service.
 
 | Area | State |
 |---|---|
-| Tests | **233/233 GUT passing** (verified 2026-08-15 on `main`) |
+| Tests | **258/258 GUT passing** (verified on `main` @ `d31e1a9`) |
 | Headless boot | `main.tscn` boots clean, exit 0 |
 | Import | `--import` clean |
-| CI | Green on PRs and pushes to `main` (import → GUT → boot smoke → gdlint) |
+| CI | Green on `main` (gdlint → import → GUT → boot smoke) |
 | Android export | Signed debug APK builds; **never run on a device** |
-| Visual / audio | **Unverified** — no human has seen or heard the build |
+| Visual / audio | **Verified on desktop 2026-08-15** — plays, looks and sounds correct |
+| Combat model | **ADR 0001 shipped** — Momentum/Charge/Break/Deathblow live |
 | Scope | **Decided** — ADRs 0001/0002/0003, `Requirements.md` v1.2 |
 
 ### Open PRs
 
-| # | Title | State |
-|---|---|---|
-| [#26](https://github.com/adbarc92/wolf-zero/pull/26) | `docs:` swarm handoff for the momentum rework + requirements scope pass | Open |
-| — | `feat:` ADR 0001 momentum/Charge rework (Lane A) | In flight |
-| — | `docs:` scope pass (Lane B — this document) | In flight |
+**None.** PRs #18–#28 are all merged.
 
 ### Known gaps
 
-- **Visual/on-device validation has never happened.** Character feet alignment,
-  fog-band scale/offset, and whether the 10 SFX keys actually sound right are all
-  open. Details and the exact knobs: [`docs/handoff/handoff-2026-06-21-art-audio-env.md`](handoff/handoff-2026-06-21-art-audio-env.md).
-- **The two largest launch systems are unbuilt and undesigned in code**: the Boss
-  Gauntlet (`Requirements.md` §2.11) and ad-hoc co-op (§2.5). Both depend on the
-  ADR 0001 combat model settling first.
+- **On-device validation still has not happened.** Desktop play is verified;
+  the APK has never been installed or run, so touch layout, one-handed reach and
+  OGG playback on Android remain unknown.
+- **The two largest launch systems are still unbuilt**: the Boss Gauntlet
+  (`Requirements.md` §2.11) and ad-hoc co-op (§2.5). Their blocker — the ADR 0001
+  combat model — is now cleared.
+- **The combat rework has not been playtested.** Every claim about it rests on
+  258 passing tests and a headless boot. Nobody has felt whether spending
+  Momentum to block, or a three-parry Break, is any fun.
+- **The Central City pack is set dressing, not a terrain kit.** `Tiles.png` is
+  96×144 — a handful of pieces. `Buildings.png` is facades, `Props-01.png` is
+  street clutter. The long-standing plan "foreground tileset → real level
+  geometry" rests on an asset that does not exist. Levels 3–6 either keep
+  code-defined platform rectangles with these as decoration, or need a terrain
+  tileset sourced or commissioned.
 - `_level.arena_to_activate(px, …)` takes a **single player position** and has no
   answer for two (ADR 0002, FR-COP-010).
 - `GameState`'s **mission API is dead code** — progression runs on `Levels`.
@@ -91,10 +100,14 @@ upgrades, and every online co-op service.
 
 ### Next steps
 
-1. **Land the ADR 0001 combat rework.** It gates the Gauntlet's scoring, every
-   co-op proximity verb, and the Break/Deathblow loop the game is sold on.
-2. **Launch the game and look at it.** Still the highest-value action available,
-   and still nobody has done it.
+1. **Playtest the new combat model.** It shipped verified but unfelt. Does
+   spending Momentum to block read as a real decision? Is a three-parry Break
+   satisfying or a chore? Does starting a fight unable to block teach itself, or
+   just confuse? These are the numbers most likely to need moving, and no test
+   can answer them.
+2. **Decide the level-geometry approach** — code-defined rectangles with the
+   Central City art as decoration, or source/commission a real terrain tileset.
+   Levels 3–6 cannot start without this call.
 3. **Build Levels Three to Six**, with Geisha Network in Level 3 and Iron Daimyo
    closing Level 6. This is the largest remaining block of work.
 4. **Build the Boss Gauntlet** (FR-GNT-001→015) — reuse only, no bespoke content.
@@ -106,6 +119,36 @@ upgrades, and every online co-op service.
 ---
 
 ## Session log
+
+### 2026-08-15 (later) — Both lanes merged and integrated
+
+The two-lane swarm (PRs #27, #28) plus the handoff (#26) merged; CI green on
+`main` @ `d31e1a9`. Agent worktrees cleaned up. **Zero open PRs.**
+
+- **Lane A** shipped ADR 0001: 233 → **258 tests**. Chosen values — bank floor
+  40/100, Charge cap 3, block cost = raw damage ×1.0, parry drain 34 (exactly
+  three parries Break anything), Broken 2.0s player / 2.5s enemy. Deathblow is
+  automatic on any landed hit against a Broken target, gated to the player's
+  team. `MomentumSystem` moved to slot 2 in the registration order so Broken
+  suppression lands before anything reads input.
+- **Lane B** shipped the scope pass: `Requirements.md` v1.2, a `Launch` column on
+  all 377 rows, §2.11 Boss Gauntlet, §2.5 rewritten for ADR 0002. Chose **6
+  levels** (floor 4) and a narrative floor of "enough Neo Edo to make the setting
+  land" rather than nothing.
+- **Integration (this pass):** applied Lane A's contract requests, which the lane
+  structure deliberately deferred — FR-DEF-013 → Complete, new FR-MOM-011→015,
+  FR-DEF-014 and FR-BOS-010 for the Deathblow, FR-MOM-003 and FR-ECH-012 marked
+  Removed, critical path updated.
+- **Corrected a real error in `CONTEXT.md`:** the Momentum entry said the bar
+  "starts empty", which is only true of the *player*. Enemy Momentum must start
+  **full** and must not decay, or enemies would spawn Broken and could be Broken
+  by waiting. Lane A caught it; the glossary now states the asymmetry and why it
+  exists.
+
+State delta: combat model reworked and verified; documentation now describes the
+shipped game; desktop play confirmed. The blocker moved from design to content,
+and the next real risk is that the new combat has never been *felt*.
+
 
 ### 2026-08-15 — Scope pass: the documents now say what ships
 
