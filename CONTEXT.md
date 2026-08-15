@@ -99,6 +99,12 @@ A co-op action that only exists when both players are near each other — linked
 deflects, one player Breaking an enemy while the other lands the Deathblow.
 Separation is free; the reward for converging is access to these.
 
+**Gauntlet**
+The repeatable mode: bosses and elites fought back to back, scored on time and
+on defensive performance, with no health restored between them. Distinct from a
+Level — a Gauntlet has no traversal and no goal line, only fights. It is where
+ad-hoc co-op is expected to live.
+
 **Echo**
 A holographic duplicate of the player that replays the player's own recent
 actions. It fights, draws enemy attention, and exists briefly before dissipating.

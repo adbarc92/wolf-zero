@@ -37,9 +37,22 @@ linear story.
 Ship **a tight campaign plus a repeatable mode**:
 
 - **4–6 handcrafted levels** and **3–4 bosses**
-- **A repeatable mode** — the home of ad-hoc co-op and the retention loop
+- **A Boss Gauntlet** as the repeatable mode — the home of ad-hoc co-op and the
+  retention loop
 - **Skill trees, the three-currency economy, and the twelve-mission narrative are
   cut to near zero** for launch
+
+The Gauntlet is bosses and elites fought back to back, scored on time and
+defensive performance, with no health restored between fights. It was chosen over
+the alternatives because it is nearly free — it reuses content the campaign
+builds anyway — and because durable opponents are the only place the
+Momentum/Deathblow loop is legible at all. Four of six enemy types die in about
+half a second, so a wave-survival mode would have exercised crowd navigation
+rather than the combat model the game is built on.
+
+Time attack, wave survival, and roguelike runs are all wanted eventually and are
+queued in the Idea Bank. None is built until the Gauntlet proves the repeatable
+loop is worth returning to.
 
 The combat model is the product. Replayability with a friend is the retention,
 not a story.

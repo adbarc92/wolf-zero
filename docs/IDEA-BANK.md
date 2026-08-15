@@ -12,6 +12,33 @@ Revisit after the game is out and there is evidence about what players want.
 
 ---
 
+## Further repeatable modes
+
+The Boss Gauntlet ships first (ADR 0003). These are wanted **eventually** — they
+are queued, not rejected. Each should only be built once the Gauntlet has proven
+the repeatable loop is worth returning to.
+
+**Time attack on campaign levels.**
+Replay a campaign level scored on time plus style, with leaderboards. The
+cheapest of all — zero new content, just scoring and a results screen — and it
+showcases dash-jump and the "enemies are optional obstacles" design head on. The
+open problem is co-op: a race between two players with independent cameras is
+awkward, so it may be a solo-leaning mode.
+
+**Wave survival arena.**
+One arena, escalating waves, endless. Cheap, infinitely repeatable, co-op works
+naturally. Held back because four of six enemy types die in about half a second,
+so today it would test crowd navigation rather than the Momentum/Deathblow loop.
+Becomes much more attractive if the roster gains more durable mid-tier enemies.
+
+**Roguelike runs.**
+Procedurally ordered arenas with run modifiers and meta-progression. By far the
+strongest retention of the four, and the most on-trend for the audience. Also a
+second game's worth of systems, which is precisely what ADR 0003 exists to
+prevent before launch. The natural "what's next" after the game ships.
+
+---
+
 ## Progression systems
 
 **Skill trees — BLADE / SHADOW / ECHO, 10 skills each.**
