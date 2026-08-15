@@ -12,11 +12,13 @@ wolf-zero/
 │   └── icon.svg               # Game icon
 │
 ├── docs/                      # Design documentation
+│   ├── STATUS.md              # Living project status — read this first
+│   ├── CODEBASE-DIGEST.md     # Actual architecture, for agents
 │   ├── CoreDesign.md          # Core game design document
 │   ├── Requirements.md        # Full requirements specification
-│   ├── DevTasks.md            # Development task breakdown
-│   ├── Architecture.md        # ECS architecture overview
-│   └── Features.md            # Feature brainstorming
+│   ├── DevTasks.md            # Development task breakdown (stale)
+│   ├── EXPORT.md              # Mobile export pipeline
+│   └── archive/               # Superseded pre-pivot brainstorms
 │
 ├── scenes/                    # Godot scenes
 │   ├── main/                  # Main game scene

@@ -1,3 +1,12 @@
+> ⚠️ **ARCHIVED — PRE-PIVOT BRAINSTORM. DO NOT USE.**
+>
+> Unedited chat transcript describing a multi-era, history-hacking co-op concept
+> that Wolf Zero is not. Its content is also duplicated verbatim below. Current
+> design: [`docs/CoreDesign.md`](../CoreDesign.md). See
+> [`docs/archive/README.md`](README.md).
+
+---
+
 Feature Expansion
 
 Let me help brainstorm some unique features that blend cyberpunk with historical elements while maintaining fast-paced hack-and-slash gameplay. I'll build on inspirations like Katana Zero's time manipulation and Ninja Gaiden's technical combat.

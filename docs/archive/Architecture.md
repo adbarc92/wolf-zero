@@ -1,3 +1,13 @@
+> ⚠️ **ARCHIVED — DESCRIBES A DIFFERENT GAME. DO NOT USE.**
+>
+> This is an unedited chat transcript from a pre-pivot concept (history hacking,
+> multi-era cities, cybernetic companions, crowd riots). **None** of the
+> entities, components, or systems below exist in the codebase. The real
+> architecture is [`docs/CODEBASE-DIGEST.md`](../CODEBASE-DIGEST.md). See
+> [`docs/archive/README.md`](README.md).
+
+---
+
 Here it! Here’s a concise summary of all the **entities**, **components**, and **systems** we’ve designed for your cyberpunk historical side-scroller hack-and-slash game with platforming and co-op, built using an ECS architecture. This captures the core structure and unique features while keeping it modular and teamwork-focused.
 
 ---
