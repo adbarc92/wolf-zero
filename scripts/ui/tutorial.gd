@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name Tutorial
-## First-run onboarding prompts for the three unlearnable mechanics:
-## momentum, Echo, and parry.
+## First-run onboarding prompts for the four unlearnable mechanics: Momentum,
+## Charges/Echo, parry, and being Broken.
 ##
 ## Each prompt is triggered by a real GameEvents signal, shown once, and then
 ## never again for the rest of the run. The trigger/show-once decision is kept
@@ -21,12 +21,14 @@ class_name Tutorial
 const PROMPT_MOMENTUM := "momentum"
 const PROMPT_ECHO := "echo"
 const PROMPT_PARRY := "parry"
+const PROMPT_BROKEN := "broken"
 
 ## SHORT copy — commute / one-handed audience. One line each.
 const COPY := {
-	PROMPT_MOMENTUM: "Momentum building — keep attacking to charge up.",
-	PROMPT_ECHO: "Echo ready! Send a decoy to bait enemies.",
+	PROMPT_MOMENTUM: "Momentum builds as you hit — blocking spends it.",
+	PROMPT_ECHO: "Charge banked! Spend it on an Echo decoy.",
 	PROMPT_PARRY: "Tap parry just before a hit to deflect it.",
+	PROMPT_BROKEN: "Broken! Attack to build your Momentum back.",
 }
 
 ## Pure show-once trigger state machine.
@@ -68,14 +70,18 @@ class TriggerState:
 static func prompt_for_momentum_changed(current: float) -> String:
 	return PROMPT_MOMENTUM if current > 0.0 else ""
 
-## Crossing the echo momentum threshold teaches Echo (the signal only fires
-## at the threshold, so it always maps).
-static func prompt_for_echo_threshold() -> String:
-	return PROMPT_ECHO
+## Banking the first Charge teaches Echo — a Charge is the only thing Echo costs,
+## so holding one is exactly when the ability becomes real.
+static func prompt_for_charges_changed(charges: int) -> String:
+	return PROMPT_ECHO if charges > 0 else ""
 
 ## Taking the first hit teaches parry (you got hit — next time, deflect it).
 static func prompt_for_player_damaged() -> String:
 	return PROMPT_PARRY
+
+## Being Broken teaches what blocking costs, at the one moment it is legible.
+static func prompt_for_broken() -> String:
+	return PROMPT_BROKEN
 
 # =============================================================================
 # PRESENTATION (scene side — anchoring follows hud.gd conventions)
@@ -140,7 +146,8 @@ func _build_prompt() -> void:
 
 func _connect_signals() -> void:
 	GameEvents.momentum_changed.connect(_on_momentum_changed)
-	GameEvents.momentum_threshold_echo_reached.connect(_on_echo_threshold_reached)
+	GameEvents.charges_changed.connect(_on_charges_changed)
+	GameEvents.momentum_broken.connect(_on_momentum_broken)
 	GameEvents.player_damaged.connect(_on_player_damaged)
 
 
@@ -158,8 +165,12 @@ func _on_momentum_changed(current: float, _max_value: float, _percent: float) ->
 	_try_show(prompt_for_momentum_changed(current))
 
 
-func _on_echo_threshold_reached() -> void:
-	_try_show(prompt_for_echo_threshold())
+func _on_charges_changed(charges: int, _max_charges: int) -> void:
+	_try_show(prompt_for_charges_changed(charges))
+
+
+func _on_momentum_broken() -> void:
+	_try_show(prompt_for_broken())
 
 
 func _on_player_damaged(_damage: int, _current_health: int) -> void:

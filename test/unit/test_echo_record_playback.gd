@@ -16,9 +16,18 @@ func _make_player(ecs) -> int:
 	ecs.add_component(e, "sprite", Components.sprite())
 	ecs.add_component(e, "input_state", Components.input_state())
 	ecs.add_component(e, "weapon", Components.weapon())
+	ecs.add_component(e, "momentum", Components.momentum())
 	ecs.add_component(e, "echo_data", Components.echo_data())
 	ecs.add_component(e, "tag_player", Components.tag_player())
 	return e
+
+
+func _free_echo_nodes(ecs) -> void:
+	# The echo render node is parentless in a headless test; free it by hand.
+	for echo_id in ecs.get_entities_with("tag_echo"):
+		var n = ecs.get_entity_node(echo_id)
+		if n:
+			n.free()
 
 
 func test_recording_appends_a_frame_per_process():
@@ -59,36 +68,70 @@ func test_recording_stops_when_not_recording():
 	assert_eq(echo_data.recording.size(), 0, "no frames captured when is_recording is false")
 
 
-func test_activation_requires_momentum_gate_and_a_recording():
+func test_activation_spends_a_charge():
 	var ecs = _make_ecs()
+	var momentum_sys = MomentumSystem.new(); ecs.register_system(momentum_sys)
 	var sys = EchoSystem.new(); ecs.register_system(sys)
 	var e = _make_player(ecs)
-	var echo_data = ecs.get_component(e, "echo_data")
+	var momentum = ecs.get_component(e, "momentum")
 	var input = ecs.get_component(e, "input_state")
 
-	# Build a small recording, then press echo.
+	# Build a small recording, bank a Charge, then press echo.
+	sys.process(0.016)
+	sys.process(0.016)
+	momentum_sys.add_momentum(e, momentum.max)
+	assert_eq(momentum.charges, 1, "a filled bar banked a Charge to spend")
+	input.echo_pressed = true
+
+	watch_signals(sys)
+	sys.process(0.0)
+
+	assert_eq(ecs.get_entities_with("echo_instance").size(), 1, "the Charge buys an Echo")
+	assert_signal_emitted(sys, "echo_activated", "activation emits echo_activated")
+	assert_eq(momentum.charges, 0, "and is gone from the pool")
+
+	_free_echo_nodes(ecs)
+
+
+func test_activation_is_refused_with_no_charges():
+	var ecs = _make_ecs()
+	ecs.register_system(MomentumSystem.new())
+	var sys = EchoSystem.new(); ecs.register_system(sys)
+	var e = _make_player(ecs)
+	var input = ecs.get_component(e, "input_state")
+
 	sys.process(0.016)
 	sys.process(0.016)
 	input.echo_pressed = true
 
-	# Gate closed: can_activate false -> no echo spawns.
-	echo_data.can_activate = false
 	sys.process(0.0)
-	assert_eq(ecs.get_entities_with("echo_instance").size(), 0, "no echo while momentum gate is closed")
 
-	# Gate open -> echo spawns.
-	echo_data.can_activate = true
-	watch_signals(sys)
+	assert_eq(ecs.get_entities_with("echo_instance").size(), 0,
+		"an empty Charge pool is the only thing that can refuse an Echo")
+
+
+func test_activation_has_no_cooldown_left_to_wait_out():
+	var ecs = _make_ecs()
+	var momentum_sys = MomentumSystem.new(); ecs.register_system(momentum_sys)
+	var sys = EchoSystem.new(); ecs.register_system(sys)
+	var e = _make_player(ecs)
+	var momentum = ecs.get_component(e, "momentum")
+	var input = ecs.get_component(e, "input_state")
+
+	sys.process(0.016)
+	sys.process(0.016)
+	momentum_sys.add_momentum(e, momentum.max)
+	momentum_sys.add_momentum(e, momentum.max)
+	input.echo_pressed = true
+
 	sys.process(0.0)
-	assert_eq(ecs.get_entities_with("echo_instance").size(), 1, "echo spawns when gated open with a recording")
-	assert_signal_emitted(sys, "echo_activated", "activation emits echo_activated")
-	assert_almost_eq(echo_data.cooldown, echo_data.cooldown_duration, 0.001, "activation starts the cooldown")
+	sys.process(0.0)
 
-	# Free the parentless echo render node (no scene container in this headless test).
-	for echo_id in ecs.get_entities_with("tag_echo"):
-		var n = ecs.get_entity_node(echo_id)
-		if n:
-			n.free()
+	assert_eq(ecs.get_entities_with("echo_instance").size(), 2,
+		"two Charges buy two Echoes back to back, with no cooldown between them")
+	assert_false(ecs.get_component(e, "echo_data").has("cooldown"), "the cooldown field is gone")
+
+	_free_echo_nodes(ecs)
 
 
 func test_playback_reproduces_recorded_positions_then_self_destructs():

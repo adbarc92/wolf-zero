@@ -31,7 +31,6 @@ func _get_required_components() -> Array[String]:
 
 func process(delta: float) -> void:
 	_process_recording(delta)
-	_process_cooldowns(delta)
 	_process_activation()
 	_process_playback(delta)
 
@@ -73,13 +72,6 @@ func _process_recording(_delta: float) -> void:
 		recording_frame.emit(entity_id)
 
 
-func _process_cooldowns(delta: float) -> void:
-	for entity_id in get_entities():
-		var echo_data = get_component(entity_id, "echo_data")
-		if echo_data.cooldown > 0:
-			echo_data.cooldown = max(0, echo_data.cooldown - delta)
-
-
 func _process_activation() -> void:
 	var activation_required: Array[String] = ["echo_data", "input_state", "tag_player"]
 	for entity_id in ecs.get_entities_with_all(activation_required):
@@ -88,16 +80,14 @@ func _process_activation() -> void:
 
 		if not input.echo_pressed:
 			continue
-
-		# Check if can activate
-		if not echo_data.can_activate:
-			continue
-		if echo_data.cooldown > 0:
-			continue
 		if echo_data.recording.is_empty():
 			continue
 
-		# Activate echo
+		# A Charge is Echo's only cost and only gate: no cooldown, no threshold.
+		var momentum_system = ecs.get_system(MomentumSystem)
+		if not momentum_system or not momentum_system.spend_charge(entity_id):
+			continue
+
 		_spawn_echo(entity_id, echo_data)
 
 
@@ -129,9 +119,6 @@ func _spawn_echo(owner_id: int, echo_data: Dictionary) -> void:
 	instance.owner_entity = owner_id
 	instance.recorded_actions = echo_data.recording.duplicate()
 	ecs.add_component(echo_id, "echo_instance", instance)
-
-	# Start cooldown
-	echo_data.cooldown = echo_data.cooldown_duration
 
 	echo_activated.emit(owner_id, echo_id)
 

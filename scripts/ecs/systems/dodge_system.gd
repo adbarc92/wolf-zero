@@ -30,17 +30,13 @@ func process(delta: float) -> void:
 			_process_dodge(entity_id, dodge, health, delta)
 
 
+## Dodging does not build Momentum. Only parries and landed attacks do — a dodge
+## already pays the player in i-frames, and paying it in composure as well would
+## make the safest defensive option the best way to fund the others.
 func _start_dodge(entity_id: int, dodge: Dictionary) -> void:
 	dodge.is_dodging = true
 	dodge.dodge_timer = 0.0
 	dodge.dodge_cooldown = dodge.cooldown_duration
-
-	# Add momentum for dodge
-	var momentum_system = ecs.get_system(MomentumSystem)
-	if momentum_system:
-		var momentum = get_component(entity_id, "momentum")
-		if momentum:
-			momentum_system.add_momentum(entity_id, momentum.gain_dodge)
 
 	dodge_started.emit(entity_id)
 

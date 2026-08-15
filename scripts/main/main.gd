@@ -72,6 +72,9 @@ func _ready() -> void:
 
 func _initialize_ecs() -> void:
 	ECS.register_system(InputSystem.new())
+	# Momentum runs second, straight after input: a Broken combatant has to have
+	# its inputs and hitbox dropped before Parry/Dodge/Combat read them.
+	ECS.register_system(MomentumSystem.new())
 	ECS.register_system(AISystem.new())
 	ECS.register_system(BossSystem.new())
 	ECS.register_system(ParrySystem.new())
@@ -82,7 +85,6 @@ func _initialize_ecs() -> void:
 	ECS.register_system(EchoSystem.new())
 	ECS.register_system(CombatSystem.new())
 	ECS.register_system(ProjectileSystem.new())
-	ECS.register_system(MomentumSystem.new())
 	ECS.register_system(HealthSystem.new())
 
 	var anim := AnimationSystem.new()
@@ -122,7 +124,10 @@ func _connect_signals() -> void:
 	var momentum_system: MomentumSystem = ECS.get_system(MomentumSystem)
 	if momentum_system:
 		momentum_system.momentum_changed.connect(_on_momentum_changed)
-		momentum_system.threshold_reached.connect(_on_momentum_threshold_reached)
+		momentum_system.charge_banked.connect(_on_charges_changed)
+		momentum_system.charge_spent.connect(_on_charges_changed)
+		momentum_system.entity_broken.connect(_on_entity_broken)
+		momentum_system.entity_recovered.connect(_on_entity_recovered)
 
 	# Connect echo system signals
 	var echo_system: EchoSystem = ECS.get_system(EchoSystem)
@@ -257,10 +262,9 @@ func _spawn_player(position: Vector2) -> int:
 	vel.friction = 6000.0
 	platformer.dash_cooldown_time = 0.05
 
-	# Apply echo upgrades
+	# Apply echo upgrades. Echo's cost is a Charge, so there is no cooldown to set.
 	var echo_data = ECS.get_component(entity_id, "echo_data")
 	echo_data.max_record_time = GameState.player_data.echo_record_time
-	echo_data.cooldown_duration = GameState.player_data.echo_cooldown
 
 	GameEvents.player_spawned.emit(entity_id)
 	print("Player spawned with entity ID: ", entity_id)
@@ -271,8 +275,7 @@ func _spawn_player(position: Vector2) -> int:
 
 	var momentum = ECS.get_component(entity_id, "momentum")
 	GameEvents.ui_update_momentum.emit(momentum.current, momentum.max)
-
-	GameEvents.ui_update_echo_cooldown.emit(0.0, echo_data.cooldown_duration)
+	GameEvents.charges_changed.emit(momentum.charges, momentum.charges_max)
 
 	return entity_id
 
@@ -310,6 +313,7 @@ func _spawn_enemy(position: Vector2, enemy_type: String) -> int:
 		base_health = int(base_health * 0.85)  # 15% reduction
 	ECS.add_component(entity_id, "health", Components.health(base_health))
 	ECS.add_component(entity_id, "weapon", Components.weapon(int(arch.damage), 0.5))
+	ECS.add_component(entity_id, "momentum", Components.enemy_momentum())
 	ECS.add_component(entity_id, "platformer", Components.platformer())
 	ECS.add_component(entity_id, "ai", Components.ai("patrol"))
 	ECS.add_component(entity_id, "enemy", Components.enemy(enemy_type))
@@ -365,6 +369,7 @@ func _spawn_boss(position: Vector2, kind: String = "crimson_ronin") -> int:
 	ECS.add_component(id, "sprite", spr)
 	ECS.add_component(id, "health", Components.health(cfg.hp))
 	ECS.add_component(id, "weapon", Components.weapon(cfg.dmg, 0.5))
+	ECS.add_component(id, "momentum", Components.enemy_momentum())
 	ECS.add_component(id, "platformer", Components.platformer())
 	var en = Components.enemy(kind); en.facing = -1
 	ECS.add_component(id, "enemy", en)
@@ -480,20 +485,16 @@ func _process(delta: float) -> void:
 				_won = true
 				_advance_or_finish()
 
-	# Update echo cooldown HUD
-	var echo_data = ECS.get_component(_player_entity_id, "echo_data")
-	if echo_data:
-		GameEvents.ui_update_echo_cooldown.emit(echo_data.cooldown, echo_data.cooldown_duration)
-
-		# Emit echo ready/not ready events
-		if echo_data.can_activate and echo_data.cooldown <= 0:
-			if not _echo_was_ready:
+	# Echo readiness is the Charge pool and nothing else.
+	var momentum = ECS.get_component(_player_entity_id, "momentum")
+	if momentum:
+		var echo_ready: bool = momentum.charges > 0
+		if echo_ready != _echo_was_ready:
+			_echo_was_ready = echo_ready
+			if echo_ready:
 				GameEvents.echo_ready.emit()
-				_echo_was_ready = true
-		else:
-			if _echo_was_ready:
+			else:
 				GameEvents.echo_not_ready.emit()
-				_echo_was_ready = false
 
 
 # =============================================================================
@@ -636,15 +637,22 @@ func _on_momentum_changed(entity_id: int, current: float, max_val: float) -> voi
 		GameEvents.ui_update_momentum.emit(current, max_val)
 
 
-func _on_momentum_threshold_reached(entity_id: int, threshold_name: String) -> void:
+func _on_charges_changed(entity_id: int, charges: int) -> void:
+	if entity_id != _player_entity_id:
+		return
+	var momentum = ECS.get_component(entity_id, "momentum")
+	var max_charges: int = momentum.charges_max if momentum else charges
+	GameEvents.charges_changed.emit(charges, max_charges)
+
+
+func _on_entity_broken(entity_id: int) -> void:
 	if entity_id == _player_entity_id:
-		match threshold_name:
-			"echo":
-				GameEvents.momentum_threshold_echo_reached.emit()
-			"damage":
-				GameEvents.momentum_threshold_damage_reached.emit()
-			"ultimate":
-				GameEvents.momentum_threshold_ultimate_reached.emit()
+		GameEvents.momentum_broken.emit()
+
+
+func _on_entity_recovered(entity_id: int) -> void:
+	if entity_id == _player_entity_id:
+		GameEvents.momentum_recovered.emit()
 
 
 func _on_echo_activated(_owner_id: int, _echo_entity_id: int) -> void:

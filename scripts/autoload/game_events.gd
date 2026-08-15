@@ -29,11 +29,11 @@ signal enemy_killed(entity_id: int, enemy_type: String)
 # =============================================================================
 
 signal momentum_changed(current: float, max_value: float, percent: float)
-signal momentum_threshold_echo_reached()
-signal momentum_threshold_damage_reached()
-signal momentum_threshold_duration_reached()
-signal momentum_threshold_ultimate_reached()
-signal momentum_threshold_lost(threshold_name: String)
+## The Charge pool changed — banked by filling the bar, spent on an ability.
+signal charges_changed(charges: int, max_charges: int)
+## Momentum spent to zero: staggered, unable to act, open.
+signal momentum_broken()
+signal momentum_recovered()
 
 # =============================================================================
 # ECHO EVENTS
@@ -43,7 +43,6 @@ signal echo_ready()
 signal echo_not_ready()
 signal echo_activated()
 signal echo_ended()
-signal echo_cooldown_updated(remaining: float, total: float)
 
 # =============================================================================
 # MOVEMENT EVENTS
@@ -79,7 +78,6 @@ signal ui_show_damage_number(position: Vector2, damage: int, is_critical: bool)
 signal ui_show_message(text: String, duration: float)
 signal ui_update_health(current: int, max_hp: int)
 signal ui_update_momentum(current: float, max_val: float)
-signal ui_update_echo_cooldown(remaining: float, total: float)
 signal lives_changed(lives: int)
 
 signal boss_spawned(boss_name: String)

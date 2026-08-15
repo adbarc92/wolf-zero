@@ -49,6 +49,7 @@ static func create_enemy_ronin_drone(ecs: Node, position: Vector2, parent: Node2
 	ecs.add_component(entity_id, "health", Components.health(base_health))
 
 	ecs.add_component(entity_id, "weapon", Components.weapon(10, 0.5))
+	ecs.add_component(entity_id, "momentum", Components.enemy_momentum())
 	ecs.add_component(entity_id, "ai", Components.ai("patrol"))
 	ecs.add_component(entity_id, "enemy", Components.enemy("ronin_drone"))
 	ecs.add_component(entity_id, "tag_enemy", Components.tag_enemy())
@@ -71,6 +72,7 @@ static func create_enemy_cyber_ashigaru(ecs: Node, position: Vector2, parent: No
 	ecs.add_component(entity_id, "health", Components.health(base_health))
 
 	ecs.add_component(entity_id, "weapon", Components.weapon(8, 0.8))  # Ranged, slower
+	ecs.add_component(entity_id, "momentum", Components.enemy_momentum())
 	ecs.add_component(entity_id, "ai", Components.ai("patrol"))
 	ecs.add_component(entity_id, "enemy", Components.enemy("cyber_ashigaru"))
 	ecs.add_component(entity_id, "tag_enemy", Components.tag_enemy())
@@ -102,6 +104,7 @@ static func create_enemy_oni_mech(ecs: Node, position: Vector2, parent: Node2D, 
 	ecs.add_component(entity_id, "health", Components.health(base_health))
 
 	ecs.add_component(entity_id, "weapon", Components.weapon(25, 1.0))  # High damage, slow
+	ecs.add_component(entity_id, "momentum", Components.enemy_momentum())
 	ecs.add_component(entity_id, "ai", Components.ai("patrol"))
 
 	var enemy = Components.enemy("oni_mech")
