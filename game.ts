@@ -283,7 +283,7 @@ function renderingSystem(): void {
 // --- Game Loop ---
 
 let lastTime: number = Date.now();
-export function gameLoop(): void {
+function gameLoop(): void {
   const now: number = Date.now();
   const dt: number = (now - lastTime) / 1000; // Delta time in seconds
   lastTime = now;
@@ -307,5 +307,5 @@ export function gameLoop(): void {
   requestAnimationFrame(gameLoop);
 }
 
-// Start the game
-// gameLoop();
+// Start the game when the window loads
+window.onload = () => gameLoop();
